@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입</title>
+    <!-- Font Awesome 라이브러리 추가 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 페이지 기본 스타일 */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+        }
+        /* 회원가입 박스 스타일 */
+        .signup-box {
+            width: 400px;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+            /* 제목 스타일 */
+            .signup-box h1 {
+                margin: 0;
+                margin-bottom: 20px;
+                font-size: 24px;
+                text-align: center;
+                color: #333;
+            }
+        /* 입력 그룹 스타일 */
+        .form-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+            .form-group label {
+                width: 100px;
+                font-size: 14px;
+                color: #333;
+                margin-right: 10px;
+            }
+
+        .signup-box input[type="text"],
+        .signup-box input[type="password"],
+        .signup-box input[type="email"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        /* 캡차 스타일 */
+        .captcha-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .captcha-canvas {
+            width: 100%;
+            height: 60px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .refresh-icon {
+            cursor: pointer;
+            color: #007BFF;
+            font-size: 24px;
+        }
+        /* 버튼 스타일 */
+        .signup-box button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .verify-captcha-btn {
+            background-color: #007BFF;
+            margin-top: 0; /* 확인 버튼과 캡차 사이의 여백 제거 */
+        }
+
+        .signup-btn {
+            background-color: #4CAF50;
+        }
+
+        .signup-box button:hover {
+            background-color: #45a049;
+        }
+        /* 하단 텍스트 스타일 */
+        .signup-box p {
+            font-size: 14px;
+            color: #777;
+            text-align: center;
+            margin-top: 15px;
+        }
+        /* 회사 로고 스타일 */
+        .logo {
+            width: 300px;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        // 우클릭 방지 기능
+        document.addEventListener('contextmenu', event => event.preventDefault());
+    </script>
+</head>
+<body>
+    <div class="signup-box">
+        <h1>회원가입</h1>
+        <div class="form-group">
+            <label for="userId">아이디</label>
+            <input type="text" id="userId" placeholder="아이디 입력" required>
+        </div>
+        <div class="form-group">
+            <label for="password">비밀번호</label>
+            <input type="password" id="password" placeholder="비밀번호 입력" required>
+        </div>
+        <div class="form-group">
+            <label for="confirmPassword">비밀번호 확인</label>
+            <input type="password" id="confirmPassword" placeholder="비밀번호 확인" required>
+        </div>
+        <div class="form-group">
+            <label for="name">성함</label>
+            <input type="text" id="name" placeholder="성함 입력" required>
+        </div>
+        <div class="form-group">
+            <label for="phone">연락처</label>
+            <input type="text" id="phone" placeholder="연락처 입력" required>
+        </div>
+        <div class="form-group">
+            <label for="school">학교명(기관)</label>
+            <input type="text" id="school" placeholder="학교명(기관) 입력">
+        </div>
+        <div class="form-group">
+            <label for="position">직책</label>
+            <input type="text" id="position" placeholder="직책 입력">
+        </div>
+        <div class="form-group">
+            <label for="officePhone">사무실 연락처</label>
+            <input type="text" id="officePhone" placeholder="사무실 연락처 입력">
+        </div>
+        <div class="form-group">
+            <label for="email">이메일</label>
+            <input type="email" id="email" placeholder="이메일 입력">
+        </div>
+        <div class="form-group">
+            <label for="captchaInput">보안문자</label>
+            <input type="text" id="captchaInput" placeholder="보안문자 입력">
+        </div>
+        <div class="captcha-container">
+            <canvas id="captchaCanvas" class="captcha-canvas"></canvas>
+            <i class="fas fa-sync-alt refresh-icon" onclick="generateCaptcha()" title="새로고침"></i>
+        </div>
+        <button onclick="verifyCaptcha()" class="verify-captcha-btn">보안문자 확인</button>
+        <button onclick="signup()" id="signupButton" class="signup-btn">회원가입</button>
+        <p>이미 계정이 있으신가요? <a href="login.html">로그인</a></p>
+    </div>
+    <!-- 회사 로고 이미지 추가 -->
+    <img src="미래세이프티_로고_전면.png" alt="회사 로고" class="logo">
+
+    <script>
+        let captchaText = "";
+        let captchaVerified = false;
+
+        // 보안문자 생성 함수
+        function generateCaptcha() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            captchaText = '';
+            for (let i = 0; i < 6; i++) {
+                captchaText += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            drawCaptcha(captchaText);
+        }
+
+        // 캡차 캔버스에 그리기
+        function drawCaptcha(text) {
+            const canvas = document.getElementById("captchaCanvas");
+            const ctx = canvas.getContext("2d");
+
+            // 캔버스 초기화
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#f0f0f0";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 글자 크기와 스타일 설정
+            ctx.font = "30px Arial";
+            ctx.fillStyle = "#333";
+            for (let i = 0; i < text.length; i++) {
+                // 문자별 위치와 회전값 설정
+                const x = 25 + i * 25;
+                const y = 40 + Math.random() * 10 - 5;
+                const angle = Math.random() * 0.4 - 0.2;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fillText(text[i], 0, 0);
+                ctx.restore();
+            }
+
+            // 랜덤한 노이즈 추가
+            for (let i = 0; i < 30; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.3})`;
+                ctx.fill();
+            }
+        }
+
+        // 페이지 로드 시 보안문자 생성
+        document.addEventListener('DOMContentLoaded', generateCaptcha);
+
+        // 보안문자 확인 함수
+        function verifyCaptcha() {
+            const captchaInput = document.getElementById('captchaInput').value;
+            if (captchaInput === captchaText) {
+                alert('보안문자가 확인되었습니다.');
+                captchaVerified = true;
+            } else {
+                alert('보안문자가 일치하지 않습니다.');
+                generateCaptcha(); // 보안문자 재생성
+                captchaVerified = false;
+            }
+        }
+
+        // 회원가입 요청 함수
+        function signup() {
+            const userId = document.getElementById('userId').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const school = document.getElementById('school').value;
+            const position = document.getElementById('position').value;
+            const officePhone = document.getElementById('officePhone').value;
+            const email = document.getElementById('email').value;
+
+            if (password !== confirmPassword) {
+                alert('비밀번호가 일치하지 않습니다.');
+                return;
+            }
+
+            if (!captchaVerified) {
+                alert('보안문자를 확인해주세요.');
+                return;
+            }
+
+            fetch('http://218.156.106.25:5000/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, password, name, phone, school, position, officePhone, email })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('회원가입이 완료되었습니다.');
+                        window.location.href = 'login.html';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('회원가입 중 오류가 발생했습니다:', error));
+        }
+    </script>
+</body>
+</html>

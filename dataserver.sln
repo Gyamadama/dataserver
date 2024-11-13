@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "dataserver", "dataserver.njsproj", "{4684B9C1-0B5C-4799-8A12-2D9AA90C26C4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "솔루션 항목", "솔루션 항목", "{A79AA138-F119-4EA3-94C0-2C050BDC03AB}"
+	ProjectSection(SolutionItems) = preProject
+		server.js = server.js
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4684B9C1-0B5C-4799-8A12-2D9AA90C26C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4684B9C1-0B5C-4799-8A12-2D9AA90C26C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4684B9C1-0B5C-4799-8A12-2D9AA90C26C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4684B9C1-0B5C-4799-8A12-2D9AA90C26C4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {681B7C39-063D-469C-BA24-6A71E9628868}
+	EndGlobalSection
+EndGlobal

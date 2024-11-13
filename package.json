@@ -1,0 +1,21 @@
+{
+  "name": "dataserver",
+  "version": "0.0.0",
+  "description": "dataserver",
+  "main": "server.js",
+  "author": {
+    "name": ""
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1"
+  },
+  "eslintConfig": {},
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "mime": "^4.0.4",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.11.4"
+  }
+}

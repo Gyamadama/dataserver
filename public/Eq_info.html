@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>장비 정보 목록</title>
+    <style>
+        /* 페이지 기본 스타일 */
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            background-color: #f7f8fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 메인 컨테이너 스타일 */
+        .container {
+            margin-left: 220px; /* 사이드바 넓이와 여백 */
+            width: calc(100% - 220px);
+            max-width: 1200px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        /* 로그아웃 버튼 스타일 */
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #dc3545;
+            color: white;
+            margin-left: 10px;
+        }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #3366cc; /* 보고서 페이지와 동일한 배경색 */
+            color: white; /* 글씨 색을 흰색으로 설정 */
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        // 우클릭 방지 기능
+        document.addEventListener('contextmenu', event => event.preventDefault());
+    </script>
+</head>
+<body>
+    <!-- 사이드바가 로드될 컨테이너 -->
+    <div id="sidebar-container"></div>
+
+    <!-- 메인 컨테이너 -->
+    <div class="container">
+        <!-- 로그아웃 버튼 -->
+        <button class="logout-btn" onclick="logout()">로그아웃</button>
+
+        <!-- 장비 정보 헤더 -->
+        <div class="equipment-header">
+            <h2>장비 정보</h2>
+            <span id="equipment-count">장비대수: 0대</span>
+        </div>
+
+        <!-- 장비 정보 테이블 -->
+        <table id="equipment-table">
+            <thead>
+                <tr>
+                    <th>장비번호</th>
+                    <th>장치 유형</th>
+                    <th>제조업체</th>
+                    <th>모델명</th>
+                    <th>프리필터 개수</th>
+                    <th>프리필터 사이즈</th>
+                    <th>미디엄필터 개수</th>
+                    <th>미디엄필터 사이즈</th>
+                    <th>헤파 필터 개수</th>
+                    <th>헤파 필터 사이즈</th>
+                    <th>설치 장소</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JavaScript로 데이터가 여기에 추가됩니다. -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const userFrom = localStorage.getItem('userFrom'); // 저장된 FROM 값 가져오기
+
+        // 사이드바를 동적으로 로드하는 함수
+        function loadSidebar() {
+            fetch('sidebar.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('sidebar-container').innerHTML = html;
+                })
+                .catch(error => console.error('사이드바 로드 중 오류:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSidebar();
+            loadEquipmentInfo();
+        });
+
+        // 로그아웃 함수
+        function logout() {
+            localStorage.removeItem('userFrom'); // 저장된 로그인 정보 삭제
+            window.location.href = 'login.html'; // 로그인 페이지로 이동
+        }
+
+        // 장비 정보 불러오기 함수
+        function loadEquipmentInfo() {
+            if (!userFrom) {
+                alert('로그인 정보가 없습니다.');
+                return;
+            }
+
+            fetch(`http://218.156.106.25:5000/equipmentinfo?from=${userFrom}`)
+                .then(response => response.json())
+                .then(data => {
+                    const equipmentTable = document.getElementById('equipment-table');
+                    const equipmentTableBody = equipmentTable.getElementsByTagName('tbody')[0];
+
+                    // 기존 테이블 내용을 지웁니다.
+                    equipmentTableBody.innerHTML = '';
+
+                    // 장비 정보 표시
+                    const equipmentCount = data.length;
+                    document.getElementById('equipment-count').innerText = `장비대수: ${equipmentCount}대`;
+
+                    data.forEach(equipment => {
+                        const equipmentRow = document.createElement('tr');
+                        equipmentRow.innerHTML = `
+                                <td>${equipment.eq_no}</td>
+                                <td>${equipment.deviceType}</td>
+                                <td>${equipment.manufacturer}</td>
+                                <td>${equipment.modelName}</td>
+                                <td>${equipment.precount}</td>
+                                <td>${equipment.presize}</td>
+                                <td>${equipment.mediumcount}</td>
+                                <td>${equipment.mediumsize}</td>
+                                <td>${equipment.hepacount}</td>
+                                <td>${equipment.hepasize}</td>
+                                <td>${equipment.location}</td>
+                            `;
+                        equipmentTableBody.appendChild(equipmentRow);
+                    });
+
+                    equipmentTable.style.display = 'table';
+                })
+                .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공기순환기 유지관리 보고서</title>
+    <style>
+        /* 페이지 기본 스타일 */
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            background-color: #f7f8fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .menu-item {
+            display: block;
+            padding: 15px 20px;
+            cursor: pointer;
+            color: #ccc;
+            text-decoration: none;
+        }
+
+            .menu-item:hover {
+                background-color: #444;
+                color: white;
+            }
+
+        /* 메인 컨테이너 스타일 */
+        .container {
+            margin-left: 220px; /* 사이드바 넓이와 일치 */
+            width: calc(100% - 220px);
+            max-width: 1200px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 로그아웃 버튼 스타일 */
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #dc3545;
+            color: white;
+        }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #3366cc;
+            color: white;
+            font-weight: bold;
+        }
+
+        .download-btn.active {
+            background-color: #3366cc;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .download-btn.inactive {
+            background-color: #cccccc;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: not-allowed;
+        }
+
+        /* 페이지네이션 스타일 */
+        #pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+
+            #pagination button {
+                padding: 10px 15px;
+                border: none;
+                border-radius: 4px;
+                background-color: #f1f1f1;
+                cursor: pointer;
+                font-size: 1em;
+                color: #333;
+                transition: background-color 0.3s;
+            }
+
+                #pagination button.active {
+                    background-color: #3366cc;
+                    color: white;
+                }
+
+                #pagination button:hover {
+                    background-color: #ddd;
+                }
+    </style>
+    <script>
+        // 우클릭 방지 기능
+        document.addEventListener('contextmenu', event => event.preventDefault());
+    </script>
+</head>
+<body>
+    <div id="sidebar-container"></div>
+
+    <div class="container">
+        <button class="logout-btn" onclick="logout()">로그아웃</button>
+        <h2>공기순환기 유지관리 보고서</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>순번</th>
+                    <th>파일명</th>
+                    <th>게시일</th>
+                    <th>파일크기</th>
+                    <th>자료</th>
+                </tr>
+            </thead>
+            <tbody id="report-table-body">
+                <!-- 데이터가 로드될 곳 -->
+            </tbody>
+        </table>
+        <!-- 페이지네이션 컨테이너 -->
+        <div id="pagination"></div>
+    </div>
+    <script>
+        // 사이드바를 동적으로 로드하는 함수
+        function loadSidebar() {
+            fetch('sidebar.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('sidebar-container').innerHTML = html;
+                })
+                .catch(error => console.error('사이드바 로드 중 오류:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSidebar();
+            loadReportData(); // 페이지 로드 시 보고서 데이터 로드
+        });
+
+        // 로그아웃 함수
+        function logout() {
+            localStorage.removeItem('userFrom'); // 저장된 로그인 정보 삭제
+            window.location.href = 'login.html'; // 로그인 페이지로 이동
+        }
+
+        // 전역 변수로 현재 페이지, 페이지당 항목 수 및 데이터 저장
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let sortedData = []; // 응답받은 데이터를 저장
+
+        // 보고서 데이터 로드 함수
+        function loadReportData() {
+            const userFrom = localStorage.getItem('userFrom'); // 저장된 school_id 값 가져오기
+            console.log('school_id:', userFrom); // school_id 값 확인
+
+            fetch(`http://218.156.106.25:5000/reportdata?school_id=${userFrom}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // 데이터를 오름차순으로 정렬하고 전역 변수에 저장
+                        sortedData = data.data.sort((a, b) => a.report_no - b.report_no);
+                        console.log('Sorted data:', sortedData); // 정렬된 데이터 확인
+
+                        // 첫 페이지의 데이터를 표시하고 페이지네이션 버튼 생성
+                        displayPage(currentPage);
+                        createPagination();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('보고서 데이터 로드 중 오류 발생:', error);
+                    alert('보고서 데이터를 로드하는 데 실패했습니다.');
+                });
+        }
+
+        // 특정 페이지의 데이터를 표시하는 함수
+        function displayPage(page) {
+            const tbody = document.getElementById('report-table-body');
+            tbody.innerHTML = ''; // 기존 데이터 초기화
+
+            // 페이지에 맞는 데이터 범위 계산
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = sortedData.slice(startIndex, endIndex);
+            console.log(`Displaying page ${page} with data:`, pageData); // 현재 페이지의 데이터 확인
+
+            // 데이터를 테이블에 추가
+            pageData.forEach(report => {
+                tbody.innerHTML += `
+                        <tr>
+                            <td>${report.report_no}</td>
+                            <td>${report.report_filename}</td>
+                            <td>${report.report_date}</td>
+                            <td>${report.report_size}</td>
+                            <td>
+                                <button class="download-btn ${report.hasReport ? "active" : "inactive"}"
+                                        ${report.report_down ? `onclick="downloadReport('${report.report_no}')"` : "disabled"}>
+                                    다운로드
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+            });
+        }
+
+        // 페이지네이션 버튼 생성 함수
+        function createPagination() {
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = ''; // 기존 페이지네이션 초기화
+
+            // 총 페이지 수 계산
+            const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+            console.log('Total pages:', totalPages); // 총 페이지 수 확인
+
+            // 페이지 버튼 생성
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.classList.add('page-btn');
+
+                if (i === currentPage) {
+                    pageButton.classList.add('active'); // 현재 페이지 표시
+                }
+
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    displayPage(currentPage); // 해당 페이지의 데이터 표시
+                    createPagination(); // 페이지네이션 업데이트
+                });
+
+                paginationContainer.appendChild(pageButton);
+            }
+        }
+
+        // 보고서 다운로드 함수
+        function downloadReport(no) {
+            const userFrom = localStorage.getItem('userFrom'); // 저장된 school_id 값 가져오기
+
+            fetch(`http://218.156.106.25:5000/reportdown?school_id=${userFrom}&no=${no}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('보고서 데이터를 가져오는 중 오류 발생');
+                    }
+
+                    // Content-Disposition 헤더에서 인코딩된 파일 이름 추출
+                    const disposition = response.headers.get('Content-Disposition');
+                    let filename = `report_${no}.pdf`; // 기본 파일명 설정
+
+                    if (disposition) {
+                        // `filename*=UTF-8''` 또는 `filename=` 형식에 맞는 파일명 추출
+                        const filenameMatch = disposition.match(/filename\*?=(?:(?:UTF-8'')?(.+))/);
+                        if (filenameMatch && filenameMatch[1]) {
+                            // URI 디코딩을 통해 원래 파일명으로 변환
+                            filename = decodeURIComponent(filenameMatch[1]).replace(/['"]/g, '');
+                        }
+                    }
+
+                    return response.blob().then(blob => ({ blob, filename }));
+                })
+                .then(({ blob, filename }) => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename; // 디코딩된 파일명 사용
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url); // 메모리 해제
+                })
+                .catch(error => {
+                    console.error('보고서 다운로드 중 오류 발생:', error);
+                    alert('보고서 다운로드에 실패했습니다.');
+                });
+        }
+    </script>
+</body>
+</html>

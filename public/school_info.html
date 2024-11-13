@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학교 정보 목록</title>
+    <style>
+        /* 페이지 기본 스타일 */
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            background-color: #f7f8fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 메인 컨테이너 스타일 */
+        .container {
+            margin-left: 220px; /* 사이드바 넓이와 여백 */
+            width: calc(100% - 220px);
+            max-width: 1200px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        /* 로그아웃 버튼 스타일 */
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #dc3545;
+            color: white;
+            margin-left: 10px;
+        }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #3366cc; /* 보고서 페이지와 동일한 배경색 */
+            color: white; /* 글씨 색을 흰색으로 설정 */
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        // 우클릭 방지 기능
+        document.addEventListener('contextmenu', event => event.preventDefault());
+    </script>
+</head>
+<body>
+    <!-- 사이드바가 로드될 컨테이너 -->
+    <div id="sidebar-container"></div>
+
+    <!-- 메인 컨테이너 -->
+    <div class="container">
+        <!-- 로그아웃 버튼 -->
+        <button class="logout-btn" onclick="logout()">로그아웃</button>
+
+        <!-- 학교 정보 헤더 -->
+        <div class="header">
+            <h2>학교 정보</h2>
+        </div>
+
+        <!-- 학교 정보 테이블 -->
+        <table id="school-table">
+            <thead>
+                <tr>
+                    <th>학교ID</th>
+                    <th>학교명</th>
+                    <th>학교급</th>
+                    <th>학교설립일</th>
+                    <th>구분</th>
+                    <th>지번주소</th>
+                    <th>도로명주소</th>
+                    <th>교체일</th>
+                    <th>학교담당자</th>
+                    <th>다음교체일</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JavaScript로 데이터가 여기에 추가됩니다. -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const userFrom = localStorage.getItem('userFrom'); // 저장된 FROM 값 가져오기
+
+        // 사이드바를 동적으로 로드하는 함수
+        function loadSidebar() {
+            fetch('sidebar.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('sidebar-container').innerHTML = html;
+                })
+                .catch(error => console.error('사이드바 로드 중 오류:', error));
+        }
+        loadSchoolInfo();
+        document.addEventListener('DOMContentLoaded', loadSidebar);
+
+        // 로그아웃 함수
+        function logout() {
+            localStorage.removeItem('userFrom'); // 저장된 로그인 정보 삭제
+            window.location.href = 'login.html'; // 로그인 페이지로 이동
+        }
+
+        // 학교 정보 불러오기 함수
+        function loadSchoolInfo() {
+            if (!userFrom) {
+                alert('로그인 정보가 없습니다.');
+                return;
+            }
+
+            fetch(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
+                .then(response => response.json())
+                .then(data => {
+                    const schoolTable = document.getElementById('school-table');
+                    const schoolTableBody = schoolTable.getElementsByTagName('tbody')[0];
+
+                    // 기존 테이블 내용을 지웁니다.
+                    schoolTableBody.innerHTML = '';
+
+                    // 학교 정보 표시
+                    if (data.length > 0) {
+                        const school = data[0];
+                        const schoolRow = document.createElement('tr');
+                        schoolRow.innerHTML = `
+                                <td>${school.school_id}</td>
+                                <td>${school.school_name}</td>
+                                <td>${school.school_grade}</td>
+                                <td>${school.school_create}</td>
+                                <td>${school.school_type}</td>
+                                <td>${school.school_address1}</td>
+                                <td>${school.school_address2}</td>
+                                <td>${school.school_info}</td>
+                                <td>${school.school_md}</td>
+                                <td>${school.school_nextinfo}</td>
+                            `;
+                        schoolTableBody.appendChild(schoolRow);
+                        schoolTable.style.display = 'table';
+                    }
+                })
+                .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
+        }
+    </script>
+</body>
+</html>
