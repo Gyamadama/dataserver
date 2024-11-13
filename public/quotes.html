@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>견적 문의 페이지</title>
+    <style>
+        /* 페이지 기본 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f8fa;
+            margin: 0;
+            padding-top: 50px;
+            padding-bottom: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            min-height: 100vh;
+        }
+
+        /* 폼 컨테이너 스타일 */
+        .form-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            box-sizing: border-box;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        /* 입력 필드 스타일 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input[type="text"], input[type="email"], input[type="number"], textarea, select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        /* 제출 버튼 스타일 */
+        .submit-btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+        }
+
+            .submit-btn:hover {
+                background-color: #218838;
+            }
+
+        /* 추가/삭제 버튼 스타일 */
+        .add-remove-btn {
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        .add-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+            .add-btn:hover {
+                background-color: #0056b3;
+            }
+
+        .remove-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+            .remove-btn:hover {
+                background-color: #c82333;
+            }
+
+        /* 장비 항목 스타일 */
+        .equipment-list-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+            .equipment-list-item select, .equipment-list-item input {
+                flex: 1;
+            }
+
+        /* 파일 선택 버튼 스타일 */
+        .file-upload-label {
+            display: inline-block;
+            padding: 10px 20px;
+            color: white;
+            background-color: #007bff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+            .file-upload-label:hover {
+                background-color: #0056b3;
+            }
+
+        /* 숨겨진 파일 입력 필드 */
+        #file-upload {
+            display: none;
+        }
+
+        /* 파일 목록 박스 스타일 */
+        .file-list-container {
+            width: calc(100% - 20px);
+            max-height: 80px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #f9f9f9;
+            box-sizing: border-box;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+
+            .file-item span {
+                font-size: 0.9em;
+                color: #555;
+            }
+
+        .file-remove-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>견적 문의</h2>
+        <form id="estimate-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="school-name">기관명</label>
+                <input type="text" id="school-name" name="schoolName" required>
+            </div>
+            <div class="form-group">
+                <label for="contact-person">연락처</label>
+                <input type="text" id="contact-person" name="contactPerson" required>
+            </div>
+            <div class="form-group">
+                <label for="email">이메일</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label>보유 기기 (잘 모르시겠다면 하이픈'-'으로 표시해주세요.)</label>
+                <div class="equipment-list" id="equipment-list">
+                    <div class="equipment-list-item">
+                        <select name="equipment" required>
+                            <option value="">선택</option>
+                            <option value="공기청정기">공기청정기</option>
+                            <option value="공기순환기(전열교환기)">공기순환기(전열교환기)</option>
+                            <option value="공조기">공조기</option>
+                            <option value="기타">기타</option>
+                        </select>
+                        <input type="text" name="manufacturer" placeholder="제조업체명" required>
+                        <input type="text" name="model" placeholder="모델명" required>
+                        <input type="number" name="quantity" placeholder="보유 대수" required min="1">
+                        <button type="button" class="add-remove-btn remove-btn" onclick="removeEquipment(this)">-</button>
+                    </div>
+                </div>
+                <button type="button" class="add-remove-btn add-btn" onclick="addEquipment()">+</button>
+            </div>
+
+            <div class="form-group">
+                <label for="annual-visit">연간 방문 횟수</label>
+                <input type="number" id="annual-visit" name="annualVisit" placeholder="연간 방문 횟수" required min="0">
+            </div>
+
+            <div class="form-group">
+                <label for="annual-filter-change">연간 필터 교체 횟수</label>
+                <input type="number" id="annual-filter-change" name="annualFilterChange" placeholder="연간 필터 교체 횟수" required min="0">
+            </div>
+
+            <div class="form-group">
+                <label>자료 첨부</label>
+                <label for="file-upload" class="file-upload-label">파일 선택</label>
+                <input type="file" id="file-upload" name="files" multiple>
+                <div id="file-list" class="file-list-container">선택된 파일 없음</div>
+            </div>
+
+            <div class="form-group">
+                <label for="details">기타 문의사항</label>
+                <textarea id="details" name="details"></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">요청</button>
+        </form>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-upload');
+        const fileListContainer = document.getElementById('file-list');
+
+        fileInput.addEventListener('change', function () {
+            fileListContainer.innerHTML = '';
+            const files = Array.from(fileInput.files);
+
+            if (files.length === 0) {
+                fileListContainer.innerHTML = '선택된 파일 없음';
+            } else {
+                files.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.classList.add('file-item');
+
+                    const fileName = document.createElement('span');
+                    fileName.textContent = file.name;
+
+                    const removeButton = document.createElement('button');
+                    removeButton.classList.add('file-remove-btn');
+                    removeButton.textContent = '×';
+                    removeButton.onclick = () => removeFile(index);
+
+                    fileItem.appendChild(fileName);
+                    fileItem.appendChild(removeButton);
+                    fileListContainer.appendChild(fileItem);
+                });
+            }
+        });
+
+        function removeFile(index) {
+            const dataTransfer = new DataTransfer();
+            const files = Array.from(fileInput.files);
+
+            files.splice(index, 1);
+
+            files.forEach(file => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+
+        function addEquipment() {
+            const equipmentList = document.getElementById('equipment-list');
+            const newItem = document.createElement('div');
+            newItem.classList.add('equipment-list-item');
+
+            newItem.innerHTML = `
+                    <select name="equipment" required>
+                        <option value="">선택</option>
+                        <option value="공기청정기">공기청정기</option>
+                        <option value="공기순환기(전열교환기)">공기순환기(전열교환기)</option>
+                        <option value="공조기">공조기</option>
+                        <option value="기타">기타</option>
+                    </select>
+                    <input type="text" name="manufacturer" placeholder="제조업체명" required>
+                    <input type="text" name="model" placeholder="모델명" required>
+                    <input type="number" name="quantity" placeholder="보유 대수" required min="1">
+                    <button type="button" class="add-remove-btn remove-btn" onclick="removeEquipment(this)">-</button>
+                `;
+
+            equipmentList.appendChild(newItem);
+        }
+
+        function removeEquipment(button) {
+            const item = button.parentNode;
+            item.remove();
+        }
+
+        document.getElementById('estimate-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            fetch('http://218.156.106.25:5000/estimate-request', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert('견적 요청이 성공적으로 전송되었습니다.');
+                    } else {
+                        alert('견적 요청 전송에 실패했습니다. 다시 시도해주세요.');
+                    }
+                })
+                .catch(error => {
+                    console.error('견적 요청 전송 중 오류 발생:', error);
+                    alert('견적 요청 전송 중 오류가 발생했습니다.');
+                });
+        });
+    </script>
+</body>
+</html>

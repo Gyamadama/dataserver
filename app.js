@@ -5,7 +5,12 @@ const cors = require('cors');
 const crypto = require('crypto');
 const app = express();
 const PORT = 5000;
-const http = require('http');
+const nodemailer = require('nodemailer');
+const multer = require('multer');
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+require('dotenv').config();
 
 // 동적 import()를 사용하여 mime 모듈을 불러옴
 let mime;
@@ -15,12 +20,22 @@ let mime;
 
 // MySQL 풀 설정
 const pool = mysql.createPool({
-    host: 'localhost',
+    host: '218.156.106.25',
     user: 'root',
     password: 'mirae0216!',
     database: 'Mysql'
 });
 
+const transporter = nodemailer.createTransport({
+    service: 'Naver',
+    host: 'smtp.naver.com',
+    tls: true,
+    port: 587,
+    auth: {
+        user: process.env.NAVER_USER,
+        pass: process.env.NAVER_PASS
+    }
+});
 // CORS 설정 및 JSON 파싱 미들웨어 추가
 app.use(cors());
 app.use(express.json());
@@ -188,7 +203,102 @@ app.get('/reportdown', async (req, res) => {
     }
 });
 
+// 견적 요청 API
+app.post('/estimate-request', upload.any(), async (req, res) => {
+    try {
+        console.log("Received files:", req.files); // 요청된 파일 로그 확인
+
+        const {
+            schoolName,
+            contactPerson,
+            email,
+            annualVisit,
+            annualFilterChange,
+            details
+        } = req.body;
+
+        const equipment = req.body.equipment;
+        const manufacturers = req.body.manufacturer;
+        const models = req.body.model;
+        const quantities = req.body.quantity;
+
+        // 보유 기기 정보를 HTML 표 형식으로 조합
+        let equipmentDetails = '';
+        if (Array.isArray(equipment) && Array.isArray(manufacturers) && Array.isArray(models) && Array.isArray(quantities)) {
+            equipment.forEach((item, index) => {
+                const manufacturer = manufacturers[index] || '정보 없음';
+                const model = models[index] || '정보 없음';
+                const quantity = quantities[index] || '정보 없음';
+
+                equipmentDetails += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item}</td>
+                        <td>${manufacturer}</td>
+                        <td>${model}</td>
+                        <td>${quantity}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            equipmentDetails = '<tr><td colspan="5">보유 기기 정보가 유효하지 않습니다.</td></tr>';
+        }
+
+        // HTML 형식의 이메일 본문 내용 생성
+        const mailText = `
+            <p><strong>기관명:</strong> ${schoolName}</p>
+            <p><strong>연락처:</strong> ${contactPerson}</p>
+            <p><strong>이메일:</strong> ${email}</p>
+            <p><strong>연간 방문 횟수:</strong> ${annualVisit}</p>
+            <p><strong>연간 필터 교체 횟수:</strong> ${annualFilterChange}</p>
+            <p><strong>기타 문의사항:</strong> ${details}</p>
+            <h3>보유 기기 정보:</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+                <thead>
+                    <tr>
+                        <th>번호</th>
+                        <th>장비 종류</th>
+                        <th>제조업체명</th>
+                        <th>모델명</th>
+                        <th>보유 대수</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${equipmentDetails}
+                </tbody>
+            </table>
+        `;
+
+        // 이메일 옵션 (HTML 본문 사용)
+        const mailOptions = {
+            from: 'miraesafeti@naver.com',
+            to: 'miraesafeti@naver.com',
+            subject: `[MOKKOJI] "${schoolName}"에서 공기순환기 통합솔루션을 통한 새 견적 요청이 접수되었습니다.`,
+            html: mailText,  // HTML 형식의 이메일 본문 설정
+            attachments: req.files.filter(file=>file.fieldname=='files').map(file => ({
+                filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),  // 파일명을 UTF-8로 변환
+                content: file.buffer,
+                contentType: file.mimetype
+            }))
+        };
+
+        // 이메일 전송
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('이메일 전송 중 오류 발생:', error);
+                return res.status(500).json({ success: false, message: '이메일 전송 중 오류가 발생했습니다.' });
+            } else {
+                console.log('이메일 전송 성공:', info.response);
+                res.json({ success: true, message: '견적 요청이 성공적으로 저장되었습니다.' });
+            }
+        });
+    } catch (error) {
+        console.error('견적 요청 처리 중 오류 발생:', error);
+        res.status(500).json({ success: false, message: '견적 요청 처리 중 오류가 발생했습니다.' });
+    }
+});
+
 // 서버 시작
 app.listen(PORT, () => {
-    console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+    console.log(`서버가 http://218.156.106.25:${PORT} 에서 실행 중입니다.`);
 });
