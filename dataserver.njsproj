@@ -34,6 +34,7 @@
     <Content Include="public\Eq_info.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="public\img\MOKKOJI.png" />
     <Content Include="public\login.html" />
     <Content Include="public\quotes.html">
       <SubType>Code</SubType>
@@ -51,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="public\" />
+    <Folder Include="public\img\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
 </Project>

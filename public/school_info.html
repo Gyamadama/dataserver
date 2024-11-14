@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>학교 정보 목록</title>
     <style>
+        /* 기존 스타일 그대로 */
         /* 페이지 기본 스타일 */
         body {
             display: flex;
@@ -12,26 +13,65 @@
             background-color: #f7f8fa;
             margin: 0;
             padding: 0;
+            justify-content: center;
+            overflow-x: hidden;
         }
 
-        /* 메인 컨테이너 스타일 */
-        .container {
-            margin-left: 220px; /* 사이드바 넓이와 여백 */
-            width: calc(100% - 220px);
-            max-width: 1200px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            margin-top: 20px;
-            position: relative;
+        /* 사이드바 스타일 */
+        #sidebar-container {
+            width: 220px;
+            background-color: #333;
+            color: #fff;
+            position: fixed;
+            height: 100vh;
+            padding-top: 20px;
+            transition: transform 0.3s ease;
+            z-index: 10;
+            left: 0;
+            top: 0;
+        }
+
+        /* 모바일 사이드바 숨김 */
+        @media (max-width: 768px) {
+            #sidebar-container {
+                transform: translateX(-100%);
+                width: 50vw;
+            }
+
+                #sidebar-container.active {
+                    transform: translateX(0);
+                }
+        }
+
+        /* 상단 바 스타일 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background-color: #f7f8fa;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 15;
+        }
+
+        /* 메뉴 토글 버튼 */
+        .menu-toggle {
+            margin-left: 10px;
+            padding: 10px;
+            background-color: #3366cc;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
         /* 로그아웃 버튼 스타일 */
         .logout-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+            margin-right: 10px;
             padding: 10px 15px;
             border: none;
             border-radius: 5px;
@@ -39,50 +79,181 @@
             cursor: pointer;
             background-color: #dc3545;
             color: white;
-            margin-left: 10px;
+        }
+
+        /* 메인 컨테이너 스타일 */
+        .container {
+            margin-left: 220px;
+            margin-top: 80px;
+            width: calc(100% - 240px);
+            max-width: 1300px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            position: relative;
+            box-sizing: border-box;
+            overflow-x: auto;
+        }
+
+        /* 제목 스타일 */
+        .title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* 모바일에서 메인 컨테이너 레이아웃 조정 */
+        @media (max-width: 768px) {
+            .container {
+                margin-left: 0;
+                width: 90%;
+                margin-top: 80px;
+                padding: 15px;
+            }
         }
 
         /* 테이블 스타일 */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-            table-layout: fixed;
+            box-sizing: border-box;
+            margin: 0;
         }
 
         th, td {
             border: 1px solid #ddd;
             padding: 12px;
-            text-align: center;
+            text-align: left;
+            box-sizing: border-box;
             word-wrap: break-word;
         }
 
         th {
-            background-color: #3366cc; /* 보고서 페이지와 동일한 배경색 */
-            color: white; /* 글씨 색을 흰색으로 설정 */
+            background-color: #3366cc;
+            color: white;
             font-weight: bold;
+            text-align: left;
+        }
+
+        /* 반응형 카드 레이아웃 (작은 화면) */
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            th {
+                display: none;
+            }
+
+            tr {
+                margin-bottom: 10px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 10px;
+                background-color: #f9f9f9;
+                display: flex;
+                flex-direction: column;
+            }
+
+            td {
+                position: relative;
+                padding: 5px 10px;
+                text-align: left;
+                font-size: 14px;
+            }
+
+                td::before {
+                    content: attr(data-label);
+                    font-weight: bold;
+                    margin-right: 5px;
+                    color: #333;
+                    display: inline-block;
+                    width: 100px;
+                }
         }
     </style>
     <script>
-        // 우클릭 방지 기능
+        function loadSidebar() {
+            fetch('sidebar.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('sidebar-container').innerHTML = html;
+                })
+                .catch(error => console.error('사이드바 로드 중 오류:', error));
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar-container');
+            sidebar.classList.toggle('active');
+        }
+
         document.addEventListener('contextmenu', event => event.preventDefault());
+
+        const userFrom = localStorage.getItem('userFrom');
+
+        function logout() {
+            localStorage.removeItem('userFrom');
+            window.location.href = 'login.html';
+        }
+
+        function loadSchoolInfo() {
+            if (!userFrom) {
+                alert('로그인 정보가 없습니다.');
+                return;
+            }
+
+            fetch(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
+                .then(response => response.json())
+                .then(data => {
+                    const schoolTable = document.getElementById('school-table');
+                    const schoolTableBody = schoolTable.getElementsByTagName('tbody')[0];
+
+                    schoolTableBody.innerHTML = '';
+
+                    if (data.length > 0) {
+                        data.forEach(school => {
+                            const schoolRow = document.createElement('tr');
+                            schoolRow.innerHTML = `
+                                    <td data-label="학교ID">${school.school_id}</td>
+                                    <td data-label="학교명">${school.school_name}</td>
+                                    <td data-label="학교급">${school.school_grade}</td>
+                                    <td data-label="학교설립일">${school.school_create}</td>
+                                    <td data-label="구분">${school.school_type}</td>
+                                    <td data-label="지번주소">${school.school_address1}</td>
+                                    <td data-label="도로명주소">${school.school_address2}</td>
+                                    <td data-label="교체일">${school.school_info}</td>
+                                    <td data-label="학교담당자">${school.school_md}</td>
+                                    <td data-label="다음교체일">${school.school_nextinfo}</td>
+                                `;
+                            schoolTableBody.appendChild(schoolRow);
+                        });
+                        schoolTable.style.display = 'table';
+                    }
+                })
+                .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSidebar();
+            loadSchoolInfo();
+        });
     </script>
 </head>
 <body>
-    <!-- 사이드바가 로드될 컨테이너 -->
+    <div class="top-bar">
+        <button class="menu-toggle" onclick="toggleSidebar()">메뉴</button>
+        <button class="logout-btn" onclick="logout()">로그아웃</button>
+    </div>
+
     <div id="sidebar-container"></div>
 
-    <!-- 메인 컨테이너 -->
     <div class="container">
-        <!-- 로그아웃 버튼 -->
-        <button class="logout-btn" onclick="logout()">로그아웃</button>
-
-        <!-- 학교 정보 헤더 -->
-        <div class="header">
-            <h2>학교 정보</h2>
-        </div>
-
-        <!-- 학교 정보 테이블 -->
+        <!-- 학교 정보 제목 추가 -->
+        <div class="title">학교 정보</div>
         <table id="school-table">
             <thead>
                 <tr>
@@ -103,66 +274,5 @@
             </tbody>
         </table>
     </div>
-
-    <script>
-        const userFrom = localStorage.getItem('userFrom'); // 저장된 FROM 값 가져오기
-
-        // 사이드바를 동적으로 로드하는 함수
-        function loadSidebar() {
-            fetch('sidebar.html')
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('sidebar-container').innerHTML = html;
-                })
-                .catch(error => console.error('사이드바 로드 중 오류:', error));
-        }
-        loadSchoolInfo();
-        document.addEventListener('DOMContentLoaded', loadSidebar);
-
-        // 로그아웃 함수
-        function logout() {
-            localStorage.removeItem('userFrom'); // 저장된 로그인 정보 삭제
-            window.location.href = 'login.html'; // 로그인 페이지로 이동
-        }
-
-        // 학교 정보 불러오기 함수
-        function loadSchoolInfo() {
-            if (!userFrom) {
-                alert('로그인 정보가 없습니다.');
-                return;
-            }
-
-            fetch(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
-                .then(response => response.json())
-                .then(data => {
-                    const schoolTable = document.getElementById('school-table');
-                    const schoolTableBody = schoolTable.getElementsByTagName('tbody')[0];
-
-                    // 기존 테이블 내용을 지웁니다.
-                    schoolTableBody.innerHTML = '';
-
-                    // 학교 정보 표시
-                    if (data.length > 0) {
-                        const school = data[0];
-                        const schoolRow = document.createElement('tr');
-                        schoolRow.innerHTML = `
-                                <td>${school.school_id}</td>
-                                <td>${school.school_name}</td>
-                                <td>${school.school_grade}</td>
-                                <td>${school.school_create}</td>
-                                <td>${school.school_type}</td>
-                                <td>${school.school_address1}</td>
-                                <td>${school.school_address2}</td>
-                                <td>${school.school_info}</td>
-                                <td>${school.school_md}</td>
-                                <td>${school.school_nextinfo}</td>
-                            `;
-                        schoolTableBody.appendChild(schoolRow);
-                        schoolTable.style.display = 'table';
-                    }
-                })
-                .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
-        }
-    </script>
 </body>
 </html>

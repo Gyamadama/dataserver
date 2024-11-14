@@ -11,12 +11,14 @@
         body {
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh; /* 최소 높이를 화면 높이로 설정 */
             margin: 0;
             font-family: Arial, sans-serif;
             background-color: #f4f6f9;
+            padding-top: 20px; /* 위쪽에 여백 추가 */
+            box-sizing: border-box;
+            overflow-y: auto; /* 페이지 스크롤 활성화 */
         }
         /* 회원가입 박스 스타일 */
         .signup-box {

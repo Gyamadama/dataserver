@@ -217,30 +217,32 @@ app.post('/estimate-request', upload.any(), async (req, res) => {
             details
         } = req.body;
 
-        const equipment = req.body.equipment;
-        const manufacturers = req.body.manufacturer;
-        const models = req.body.model;
-        const quantities = req.body.quantity;
-
-        // 보유 기기 정보를 HTML 표 형식으로 조합
+        // 각 변수가 배열인지 확인하고, 그렇지 않다면 배열로 변환
+        const equipmentArray = Array.isArray(req.body.equipment) ? req.body.equipment : [req.body.equipment];
+        const manufacturersArray = Array.isArray(req.body.manufacturer) ? req.body.manufacturer : [req.body.manufacturer];
+        const modelsArray = Array.isArray(req.body.model) ? req.body.model : [req.body.model];
+        const quantitiesArray = Array.isArray(req.body.quantity) ? req.body.quantity : [req.body.quantity];
         let equipmentDetails = '';
-        if (Array.isArray(equipment) && Array.isArray(manufacturers) && Array.isArray(models) && Array.isArray(quantities)) {
-            equipment.forEach((item, index) => {
-                const manufacturer = manufacturers[index] || '정보 없음';
-                const model = models[index] || '정보 없음';
-                const quantity = quantities[index] || '정보 없음';
 
-                equipmentDetails += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${item}</td>
-                        <td>${manufacturer}</td>
-                        <td>${model}</td>
-                        <td>${quantity}</td>
-                    </tr>
-                `;
-            });
-        } else {
+        // 정보를 HTML 표 형식으로 조합
+        equipmentArray.forEach((item, index) => {
+            const manufacturer = manufacturersArray[index] || '정보 없음';
+            const model = modelsArray[index] || '정보 없음';
+            const quantity = quantitiesArray[index] || '정보 없음';
+
+            equipmentDetails += `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${item}</td>
+            <td>${manufacturer}</td>
+            <td>${model}</td>
+            <td>${quantity}</td>
+        </tr>
+    `;
+        });
+
+        // 데이터가 비어있는 경우에 대한 처리
+        if (equipmentDetails === '') {
             equipmentDetails = '<tr><td colspan="5">보유 기기 정보가 유효하지 않습니다.</td></tr>';
         }
 
@@ -271,7 +273,7 @@ app.post('/estimate-request', upload.any(), async (req, res) => {
 
         // 이메일 옵션 (HTML 본문 사용)
         const mailOptions = {
-            from: 'miraesafeti@naver.com',
+            from: 'seven5629@naver.com',
             to: 'miraesafeti@naver.com',
             subject: `[MOKKOJI] "${schoolName}"에서 공기순환기 통합솔루션을 통한 새 견적 요청이 접수되었습니다.`,
             html: mailText,  // HTML 형식의 이메일 본문 설정
