@@ -218,12 +218,29 @@
         }
     </style>
     <script>
-        // 사이드바를 동적으로 로드하는 함수
         function loadSidebar() {
             fetch('sidebar.html')
                 .then(response => response.text())
                 .then(html => {
                     document.getElementById('sidebar-container').innerHTML = html;
+
+                    // 사이드바 HTML 로드 후 추가 작업 실행
+                    const userFrom = localStorage.getItem('userFrom');
+                    console.log("userFrom 값:", userFrom); // 디버깅용
+
+                    // userFrom이 'admin'인 경우 "실측정보입력" 메뉴 추가
+                    if (userFrom === 'admin') {
+                        const sidebar = document.querySelector('.sidebar');
+
+                        // 새로운 메뉴 항목 생성
+                        const newMenuItem = document.createElement('a');
+                        newMenuItem.href = 'measure_input.html';
+                        newMenuItem.className = 'menu-item';
+                        newMenuItem.textContent = '실측정보입력';
+
+                        // 사이드바에 메뉴 추가
+                        sidebar.appendChild(newMenuItem);
+                    }
                 })
                 .catch(error => console.error('사이드바 로드 중 오류:', error));
         }
@@ -234,16 +251,18 @@
             sidebar.classList.toggle('active');
         }
 
-        // 로그아웃 함수
         function logout() {
             localStorage.removeItem('userFrom');
+            localStorage.removeItem('currentschool');
+
             window.location.href = 'login.html';
         }
-
+        const userFrom = localStorage.getItem('userFrom');
+        const currentschool = localStorage.getItem('currentschool');
         // 보고서 데이터 로드 함수
         function loadReportData() {
-            const userFrom = localStorage.getItem('userFrom');
-            fetch(`http://218.156.106.25:5000/reportdata?school_id=${userFrom}`)
+            
+            fetch(`http://218.156.106.25:5000/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
@@ -325,7 +344,7 @@
         // 보고서 다운로드 함수
         function downloadReport(no) {
             const userFrom = localStorage.getItem('userFrom');
-            fetch(`http://218.156.106.25:5000/reportdown?school_id=${userFrom}&no=${no}`)
+            fetch(`http://218.156.106.25:5000/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('보고서 데이터를 가져오는 중 오류 발생');

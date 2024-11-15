@@ -125,6 +125,28 @@
             .quote-btn:hover {
                 background-color: #218838;
             }
+
+        /* 제목 스타일 */
+        h2 {
+            font-size: 5rem;
+            color: #2c3e50;
+            margin-bottom: 1px;
+        }
+
+        /* 소개 문구 스타일 */
+        p {
+            font-size: 1rem;
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-top: 0;
+            text-align : center;
+        }
+
+        /* 강조 텍스트 스타일 */
+        .highlight {
+            color: #2980b9;
+            font-weight: bold;
+        }
     </style>
     <script>
         document.addEventListener('contextmenu', event => event.preventDefault());
@@ -132,8 +154,13 @@
 </head>
 <body>
     <!-- 상단 로고 이미지 추가 -->
-    <img src="./img/MOKKOJI.png" alt="모꼬지 로고" class="logo-top">
-
+    <!--<img src="./img/MOKKOJI.png" alt="모꼬지 로고" class="logo-top">-->
+    <h2>모꼬지</h2>
+    <p>
+        에어필터 유지관리 솔루션
+        <br>
+        에어필터 유지관리 솔루션은 우리로부터 시작됩니다.
+    </p>
     <div class="login-box">
         <h1>로그인</h1>
 
@@ -201,6 +228,7 @@
                             localStorage.setItem('rememberMe', false);
                         }
                         localStorage.setItem('userFrom', data.from);
+
                         window.location.href = 'school_info.html';
                     } else {
                         alert(data.message);

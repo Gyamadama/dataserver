@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실측 정보 입력</title>
+    <style>
+        /* 페이지 기본 스타일 */
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            background-color: #f7f8fa;
+            margin: 0;
+            padding: 0;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* 사이드바 스타일 */
+        #sidebar-container {
+            width: 220px;
+            background-color: #333;
+            color: #fff;
+            position: fixed;
+            height: 100vh;
+            padding-top: 20px;
+            transition: transform 0.3s ease;
+            z-index: 10;
+            left: 0;
+            top: 0;
+        }
+
+        /* 모바일 사이드바 숨김 */
+        @media (max-width: 768px) {
+            #sidebar-container {
+                transform: translateX(-100%);
+                width: 50vw;
+            }
+
+                #sidebar-container.active {
+                    transform: translateX(0);
+                }
+        }
+
+        /* 상단 바 스타일 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background-color: #f7f8fa;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 15;
+        }
+
+        /* 메뉴 토글 버튼 */
+        .menu-toggle {
+            margin-left: 10px;
+            padding: 10px;
+            background-color: #3366cc;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* 로그아웃 버튼 스타일 */
+        .logout-btn {
+            margin-right: 10px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #dc3545;
+            color: white;
+        }
+
+        /* 메인 컨테이너 스타일 */
+        .container {
+            margin-left: 220px;
+            margin-top: 80px;
+            width: calc(100% - 240px);
+            max-width: 1200px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            position: relative;
+            box-sizing: border-box;
+            overflow-x: auto;
+        }
+
+        /* 제목 스타일 */
+        .title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* 모바일에서 메인 컨테이너 레이아웃 조정 */
+        @media (max-width: 768px) {
+            .container {
+                margin-left: 0;
+                width: 90%;
+                margin-top: 80px;
+                padding: 15px;
+            }
+        }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            box-sizing: border-box;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #3366cc;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* 반응형 카드 레이아웃 (작은 화면) */
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+                width: 100%;
+            }
+
+            th {
+                display: none;
+            }
+
+            tr {
+                margin-bottom: 10px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 10px;
+                background-color: #f9f9f9;
+                display: flex;
+                flex-direction: column;
+            }
+
+            td {
+                position: relative;
+                padding: 5px 10px;
+                text-align: left;
+                font-size: 14px;
+            }
+
+                td::before {
+                    content: attr(data-label);
+                    font-weight: bold;
+                    margin-right: 5px;
+                    color: #333;
+                    display: inline-block;
+                    width: 120px;
+                }
+        }
+        /* 새 행 추가 버튼 스타일 */
+        .add-row-btn {
+            margin-top: 20px;
+            padding: 10px 15px;
+            font-size: 1em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* 저장 버튼 스타일 */
+        .save-btn {
+            margin-top: 20px;
+            padding: 10px 15px;
+            font-size: 1em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        /* 행 삭제 버튼 스타일 */
+        .delete-row-btn {
+            padding: 5px 10px;
+            font-size: 0.9em;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        function loadSidebar() {
+            fetch('sidebar.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('sidebar-container').innerHTML = html;
+
+                    const userFrom = localStorage.getItem('userFrom');
+                    if (userFrom === 'admin') {
+                        const sidebar = document.querySelector('.sidebar');
+                        const newMenuItem = document.createElement('a');
+                        newMenuItem.href = 'measure_input.html';
+                        newMenuItem.className = 'menu-item';
+                        newMenuItem.textContent = '실측정보입력';
+                        sidebar.appendChild(newMenuItem);
+                    }
+                })
+                .catch(error => console.error('사이드바 로드 중 오류:', error));
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar-container');
+            sidebar.classList.toggle('active');
+        }
+
+        function logout() {
+            localStorage.removeItem('userFrom');
+            localStorage.removeItem('currentschool');
+            window.location.href = 'login.html';
+        }
+
+        function makeCellEditable(cell) {
+            if (cell.classList.contains("non-editable")) return; // 편집 불가 셀은 무시
+            cell.contentEditable = true;
+            cell.focus();
+            cell.addEventListener('blur', () => {
+                cell.contentEditable = false;
+            });
+        }
+
+        function addNewRow(data = {}) {
+            const tableBody = document.getElementById('measure-table-body');
+            const newRow = document.createElement('tr');
+
+            const columns = [
+                "장비번호", "장치 유형", "제조업체", "모델명", "프리필터 개수",
+                "프리필터 사이즈", "미디엄필터 개수", "미디엄필터 사이즈",
+                "헤파 필터 개수", "헤파 필터 사이즈", "설치 장소"
+            ];
+
+            columns.forEach(columnName => {
+                const newCell = document.createElement('td');
+                newCell.setAttribute('data-label', columnName);
+
+                if (columnName === "장치 유형") {
+                    // 장치 유형 셀에 콤보박스를 추가
+                    const select = document.createElement('select');
+                    ["전열교환기", "공기청정기", "공조기", "기타"].forEach(optionText => {
+                        const option = document.createElement('option');
+                        option.value = optionText;
+                        option.textContent = optionText;
+                        select.appendChild(option);
+                    });
+                    select.value = data[columnName] || "전열교환기"; // 기본값 설정
+                    newCell.appendChild(select);
+                } else {
+                    newCell.textContent = data[columnName] || ""; // 기본값을 data 객체에서 가져오기
+                    // 장비번호 셀은 편집 불가, 다른 셀은 편집 가능
+                    if (columnName !== "장비번호") {
+                        newCell.addEventListener('click', () => makeCellEditable(newCell));
+                    } else {
+                        // '장비번호'는 현재 행 개수 + 1로 설정
+                        const rowNumber = tableBody.rows.length + 1;
+                        newCell.textContent = data[columnName] || rowNumber;
+                        newCell.classList.add("non-editable");
+                    }
+                }
+                newRow.appendChild(newCell);
+            });
+            const deleteCell = document.createElement('td');
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = "X";
+            deleteButton.className = "delete-row-btn";
+            deleteButton.onclick = () => {
+                newRow.remove();
+                updateEquipmentCount(); // 행 삭제 시 장비대수 업데이트
+            }; 
+            deleteCell.appendChild(deleteButton);
+            newRow.appendChild(deleteCell);
+
+            tableBody.appendChild(newRow);
+            updateEquipmentCount(); // 행 삭제 시 장비대수 업데이트
+
+        }
+        function updateEquipmentCount() {
+            const tableBody = document.getElementById('measure-table-body');
+            const equipmentCount = tableBody.rows.length;
+            document.getElementById('equipment-count').textContent = `장비대수: ${equipmentCount}개`;
+        }
+        function saveDataToServer() {
+            const rows = document.querySelectorAll('#measure-table-body tr');
+            const dataToSave = Array.from(rows).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    eq_no: cells[0].textContent,
+                    deviceType: cells[1].querySelector('select') ? cells[1].querySelector('select').value : cells[1].textContent,
+                    manufacturer: cells[2].textContent,
+                    modelName: cells[3].textContent,
+                    precount: cells[4].textContent,
+                    presize: cells[5].textContent,
+                    mediumcount: cells[6].textContent,
+                    mediumsize: cells[7].textContent,
+                    hepacount: cells[8].textContent,
+                    hepasize: cells[9].textContent,
+                    location: cells[10].textContent
+                };
+            });
+
+            fetch(`http://218.156.106.25:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSave)
+            })
+                .then(response => response.json())
+                .then(data => alert('데이터가 성공적으로 저장되었습니다!'))
+                .catch(error => console.error('데이터 저장 중 오류 발생:', error));
+        }
+        const currentSchool = localStorage.getItem('currentschool');
+        const userFrom = localStorage.getItem('userFrom');
+        const currentUserID = localStorage.getItem('userId'); // 사용자 ID를 로컬 스토리지에서 가져온다고 가정
+
+        function loadEquipmentInfo() {
+            if (!userFrom) {
+                alert('로그인 정보가 없습니다.');
+                return;
+            }
+            if (!currentSchool) {
+                alert('선택된 학교가없습니다. "학교정보" 페이지에서 실측을 진행할 학교를 선택하세요.');
+                return;
+            }
+
+            fetch(`http://218.156.106.25:5000/equipmentinfo?from=${currentSchool}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => {
+                        // 데이터 항목을 각 컬럼 이름에 맞게 매핑
+                        addNewRow({
+                            "장비번호": item.eq_no,
+                            "장치 유형": item.deviceType,
+                            "제조업체": item.manufacturer,
+                            "모델명": item.modelName,
+                            "프리필터 개수": item.precount,
+                            "프리필터 사이즈": item.presize,
+                            "미디엄필터 개수": item.mediumcount,
+                            "미디엄필터 사이즈": item.mediumsize,
+                            "헤파 필터 개수": item.hepacount,
+                            "헤파 필터 사이즈": item.hepasize,
+                            "설치 장소": item.location
+                        });
+                    });
+                })
+                .catch(error => console.error('장비 정보를 가져오는 중 오류가 발생했습니다:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSidebar();
+            loadEquipmentInfo(); // 페이지 로드 시 장비 정보 불러오기
+            document.getElementById('add-row-btn').addEventListener('click', () => addNewRow());
+            document.getElementById('save-btn').addEventListener('click', saveDataToServer); // 저장 버튼 클릭 시 함수 연결
+            updateEquipmentCount(); // 행 삭제 시 장비대수 업데이트
+
+        });
+    </script>
+</head>
+<body>
+    <!-- 상단 바 -->
+    <div class="top-bar">
+        <button class="menu-toggle" onclick="toggleSidebar()">메뉴</button>
+        <button class="logout-btn" onclick="logout()">로그아웃</button>
+    </div>
+
+    <!-- 사이드바가 로드될 컨테이너 -->
+    <div id="sidebar-container"></div>
+
+    <!-- 메인 컨테이너 -->
+    <div class="container">
+        <div class="title">실측 정보 입력</div>
+        <div id="equipment-count"></div>
+        <table id="measure-table">
+            <thead>
+                <tr>
+                    <th>장비번호</th>
+                    <th>장치 유형</th>
+                    <th>제조업체</th>
+                    <th>모델명</th>
+                    <th>프리필터 개수</th>
+                    <th>프리필터 사이즈</th>
+                    <th>미디엄필터 개수</th>
+                    <th>미디엄필터 사이즈</th>
+                    <th>헤파 필터 개수</th>
+                    <th>헤파 필터 사이즈</th>
+                    <th>설치 장소</th>
+                    <th>삭제</th>
+                </tr>
+            </thead>
+            <tbody id="measure-table-body">
+                <!-- 데이터가 입력될 곳 -->
+            </tbody>
+        </table>
+        <!-- 추가 및 저장 버튼 -->
+        <button id="add-row-btn" class="add-row-btn">새 행 추가</button>
+        <button id="save-btn" class="save-btn">저장</button>
+    </div>
+</body>
+</html>

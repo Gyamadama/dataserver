@@ -103,6 +103,32 @@
             color: #333;
         }
 
+        /* 검색 입력 스타일 */
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+            .search-container input {
+                padding: 8px;
+                font-size: 14px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                width: 200px;
+                margin-right: 10px;
+            }
+
+            .search-container button {
+                padding: 8px 12px;
+                font-size: 14px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
         /* 모바일에서 메인 컨테이너 레이아웃 조정 */
         @media (max-width: 768px) {
             .container {
@@ -133,6 +159,14 @@
             background-color: #3366cc;
             color: white;
             font-weight: bold;
+        }
+
+        /* 제목과 검색을 같은 행에 배치 */
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
         }
 
         /* 반응형 카드 레이아웃 (작은 화면) */
@@ -172,13 +206,65 @@
                     width: 120px;
                 }
         }
+        /* 페이징 스타일 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+
+            .pagination button {
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .pagination button.active {
+                    background-color: #0056b3;
+                }
+
+                .pagination button.disabled {
+                    background-color: #ddd;
+                    color: #aaa;
+                    cursor: not-allowed;
+                }
     </style>
     <script>
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        const maxPagesToShow = 10;
+        let fullData = [];
+
         function loadSidebar() {
             fetch('sidebar.html')
                 .then(response => response.text())
                 .then(html => {
                     document.getElementById('sidebar-container').innerHTML = html;
+
+                    // 사이드바 HTML 로드 후 추가 작업 실행
+                    const userFrom = localStorage.getItem('userFrom');
+                    console.log("userFrom 값:", userFrom); // 디버깅용
+
+                    // userFrom이 'admin'인 경우 "실측정보입력" 메뉴 추가
+                    if (userFrom === 'admin') {
+                        const sidebar = document.querySelector('.sidebar');
+
+                        // 새로운 메뉴 항목 생성
+                        const newMenuItem = document.createElement('a');
+                        newMenuItem.href = 'measure_input.html';
+                        newMenuItem.className = 'menu-item';
+                        newMenuItem.textContent = '실측정보입력';
+
+                        // 사이드바에 메뉴 추가
+                        sidebar.appendChild(newMenuItem);
+                    }
                 })
                 .catch(error => console.error('사이드바 로드 중 오류:', error));
         }
@@ -191,9 +277,12 @@
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         const userFrom = localStorage.getItem('userFrom');
+        const currentSchool = localStorage.getItem('currentschool');
 
         function logout() {
             localStorage.removeItem('userFrom');
+            localStorage.removeItem('currentschool');
+
             window.location.href = 'login.html';
         }
 
@@ -203,39 +292,112 @@
                 return;
             }
 
-            fetch(`http://218.156.106.25:5000/equipmentinfo?from=${userFrom}`)
+            fetch(`http://218.156.106.25:5000/equipmentinfo?from=${userFrom}&currentschool=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
-                    const equipmentTable = document.getElementById('equipment-table');
-                    const equipmentTableBody = equipmentTable.getElementsByTagName('tbody')[0];
+                    fullData = data;
+                    currentPage = 1; // 첫 페이지로 초기화
 
-                    equipmentTableBody.innerHTML = '';
-
-                    const equipmentCount = data.length;
-                    document.getElementById('equipment-count').innerText = `장비대수: ${equipmentCount}대`;
-
-                    data.forEach(equipment => {
-                        const equipmentRow = document.createElement('tr');
-                        equipmentRow.innerHTML = `
-                                    <td data-label="장비번호">${equipment.eq_no}</td>
-                                    <td data-label="장치 유형">${equipment.deviceType}</td>
-                                    <td data-label="제조업체">${equipment.manufacturer}</td>
-                                    <td data-label="모델명">${equipment.modelName}</td>
-                                    <td data-label="프리필터 개수">${equipment.precount}</td>
-                                    <td data-label="프리필터 사이즈">${equipment.presize}</td>
-                                    <td data-label="미디엄필터 개수">${equipment.mediumcount}</td>
-                                    <td data-label="미디엄필터 사이즈">${equipment.mediumsize}</td>
-                                    <td data-label="헤파 필터 개수">${equipment.hepacount}</td>
-                                    <td data-label="헤파 필터 사이즈">${equipment.hepasize}</td>
-                                    <td data-label="설치 장소">${equipment.location}</td>
-                                `;
-                        equipmentTableBody.appendChild(equipmentRow);
-                    });
-                    equipmentTable.style.display = 'table';
+                    displayRows(data);
                 })
                 .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
         }
+        function renderPagination(data) {
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = '';
+            const pageCount = Math.ceil(data.length / rowsPerPage);
+            const startPage = Math.floor((currentPage - 1) / maxPagesToShow) * maxPagesToShow + 1;
+            const endPage = Math.min(startPage + maxPagesToShow - 1, pageCount);
 
+            if (currentPage > 100) {
+                const fastBackButton = document.createElement('button');
+                fastBackButton.innerHTML = '&laquo;';
+                fastBackButton.addEventListener('click', () => {
+                    currentPage = Math.max(1, currentPage - 100);
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(fastBackButton);
+            }
+
+            if (currentPage > 1) {
+                const prevButton = document.createElement('button');
+                prevButton.innerHTML = '&lsaquo;';
+                prevButton.addEventListener('click', () => {
+                    currentPage--;
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(prevButton);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                if (i === currentPage) button.classList.add('active');
+                button.addEventListener('click', () => {
+                    currentPage = i;
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(button);
+            }
+
+            if (currentPage < pageCount) {
+                const nextButton = document.createElement('button');
+                nextButton.innerHTML = '&rsaquo;';
+                nextButton.addEventListener('click', () => {
+                    currentPage++;
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(nextButton);
+            }
+
+            if (currentPage + 100 <= pageCount) {
+                const fastNextButton = document.createElement('button');
+                fastNextButton.innerHTML = '&raquo;';
+                fastNextButton.addEventListener('click', () => {
+                    currentPage = Math.min(pageCount, currentPage + 100);
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(fastNextButton);
+            }
+        }
+
+        function displayRows(data) {
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedData = data.slice(start, end); // 데이터를 페이징 처리
+            const eqTableBody = document.getElementById('eq-table-body');
+
+            eqTableBody.innerHTML = '';
+            paginatedData.forEach(eq => {
+                const eqRow = document.createElement('tr');
+                eqRow.innerHTML = `
+            <td data-label="장비번호">${eq.eq_no}</td>
+            <td data-label="장치 유형">${eq.deviceType}</td>
+            <td data-label="제조업체">${eq.manufacturer}</td>
+            <td data-label="모델명">${eq.modelName}</td>
+            <td data-label="프리필터 개수">${eq.precount}</td>
+            <td data-label="프리필터 사이즈">${eq.presize}</td>
+            <td data-label="미디엄필터 개수">${eq.mediumcount}</td>
+            <td data-label="미디엄필터 사이즈">${eq.mediumsize}</td>
+            <td data-label="헤파필터 개수">${eq.hepacount}</td>
+            <td data-label="헤파필터 사이즈">${eq.hepasize}</td>
+            <td data-label="설치 장소">${eq.location}</td>
+        `;
+                eqTableBody.appendChild(eqRow);
+            });
+
+            renderPagination(data); // 페이징 버튼 업데이트
+        }
+        function searchTable() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            fetch(`http://218.156.106.25:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(filteredData => {
+                    currentPage = 1;
+                    displayRows(filteredData);
+                })
+                .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
+        }
         document.addEventListener('DOMContentLoaded', () => {
             loadSidebar();
             loadEquipmentInfo();
@@ -254,9 +416,15 @@
 
     <!-- 메인 컨테이너 -->
     <div class="container">
-        <!-- 장비 정보 제목 -->
-        <div class="title">장비 정보</div>
-        <div id="equipment-count">장비대수: 0대</div>
+        <div class="title-container">
+            <!-- 장비 정보 제목 -->
+            <div class="title">장비 정보</div>
+            <div class="search-container" id="search-container">
+                <input type="text" id="search-input" placeholder="검색어 입력...">
+                <button onclick="searchTable()">검색</button>
+            </div>
+        </div>
+
         <table id="equipment-table">
             <thead>
                 <tr>
@@ -273,10 +441,12 @@
                     <th>설치 장소</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="eq-table-body">
                 <!-- JavaScript로 데이터가 여기에 추가됩니다. -->
             </tbody>
         </table>
+        <div id="pagination" class="pagination"></div>
+
     </div>
 </body>
 </html>

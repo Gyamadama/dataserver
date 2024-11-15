@@ -23,7 +23,8 @@ const pool = mysql.createPool({
     host: '218.156.106.25',
     user: 'root',
     password: 'mirae0216!',
-    database: 'Mysql'
+    database: 'Mysql',
+    connectionLimit: 100
 });
 
 const transporter = nodemailer.createTransport({
@@ -106,12 +107,22 @@ app.post('/login', async (req, res) => {
 // 학교 정보 조회 API
 app.get('/schoolinfo', async (req, res) => {
     const userFrom = req.query.from;
-    const query = `
+    let query = null;
+    if (userFrom == 'admin') {
+        query = `
+        SELECT school_id, school_name, school_grade, school_create, school_type,
+               school_address1, school_address2, school_info, school_md, school_nextinfo
+        FROM sys.school
+        `;
+    } else {
+        query = `
         SELECT school_id, school_name, school_grade, school_create, school_type,
                school_address1, school_address2, school_info, school_md, school_nextinfo
         FROM sys.school
         WHERE school_id = ?
-    `;
+        `;
+    }
+    
 
     try {
         const [results] = await pool.query(query, [userFrom]);
@@ -122,50 +133,134 @@ app.get('/schoolinfo', async (req, res) => {
     }
 });
 
-// 장비 정보 조회 API
-app.get('/equipmentinfo', async (req, res) => {
-    const userFrom = req.query.from;
+
+app.get('/eqselectinfo', async (req, res) => {
+    const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
     const query = `
-        SELECT eq_no, deviceType, manufacturer, modelName, precount, presize,
-               mediumcount, mediumsize, hepacount, hepasize, location
-        FROM sys.school_info
-        WHERE school_id = ?
+        SELECT * FROM sys.school_info
+        WHERE school_id LIKE ?
+           OR eq_no LIKE ?
+           OR deviceType LIKE ?
+           OR manufacturer LIKE ?
+           OR modelName LIKE ?
+           OR precount LIKE ?
+           OR presize LIKE ?
+           OR mediumcount LIKE ?
+           OR mediumsize LIKE ?
+           OR hepacount LIKE ?
+           OR hepasize LIKE ?
+           OR location LIKE ?
     `;
 
     try {
-        const [results] = await pool.query(query, [userFrom]);
+        const [results] = await pool.query(query, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
         res.json(results);
     } catch (error) {
-        console.error('장비 정보를 가져오는 중 오류 발생:', error);
-        res.status(500).json({ error: '장비 정보를 가져오는 중 오류가 발생했습니다.' });
+        console.error('데이터 조회 중 오류 발생:', error);
+        res.status(500).json({ success: false, message: '데이터 조회 중 오류가 발생했습니다.' });
+    }
+});
+// schoolselectinfo API
+app.get('/schoolselectinfo', async (req, res) => {
+    const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
+    const query = `
+        SELECT * FROM sys.school
+        WHERE school_id LIKE ? 
+           OR school_name LIKE ? 
+           OR school_grade LIKE ?
+           OR school_create LIKE ?
+           OR school_type LIKE ?
+           OR school_address1 LIKE ?
+           OR school_address2 LIKE ?
+           OR school_info LIKE ?
+           OR school_md LIKE ?
+           OR school_nextinfo LIKE ?
+    `;
+
+    try {
+        const [results] = await pool.query(query, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
+        res.json(results);
+    } catch (error) {
+        console.error('데이터 조회 중 오류 발생:', error);
+        res.status(500).json({ success: false, message: '데이터 조회 중 오류가 발생했습니다.' });
+    }
+});
+
+// 장비 정보 조회 API
+app.get('/equipmentinfo', async (req, res) => {
+    const userFrom = req.query.from;
+    const currentschool = req.query.currentschool;
+    const query = `
+    SELECT eq_no, deviceType, manufacturer, modelName, precount, presize,
+            mediumcount, mediumsize, hepacount, hepasize, location
+    FROM sys.school_info
+    WHERE school_id = ?
+    `;
+
+    if (userFrom == 'admin') {
+        try {
+            const [results] = await pool.query(query, [currentschool]);
+            res.json(results);
+        } catch (error) {
+            console.error('장비 정보를 가져오는 중 오류 발생:', error);
+            res.status(500).json({ error: '장비 정보를 가져오는 중 오류가 발생했습니다.' });
+        }
+    } else {
+        try {
+            const [results] = await pool.query(query, [userFrom]);
+            res.json(results);
+        } catch (error) {
+            console.error('장비 정보를 가져오는 중 오류 발생:', error);
+            res.status(500).json({ error: '장비 정보를 가져오는 중 오류가 발생했습니다.' });
+        }
     }
 });
 
 // 보고서 데이터 조회 API
 app.get('/reportdata', async (req, res) => {
     const schoolId = req.query.school_id;
+    const currentschool = req.query.currentschool;
     const query = `
         SELECT report_no, report_down, report_date, report_filename, report_size
         FROM sys.report 
         WHERE school_id = ?
-    `;
+        `;
+    if (schoolId == 'admin') {
+        try {
+            const [results] = await pool.query(query, [currentschool]);
 
-    try {
-        const [results] = await pool.query(query, [schoolId]);
+            const reports = results.map(report => ({
+                report_no: report.report_no,
+                report_down: report.report_down,
+                report_filename: report.report_filename,
+                report_date: report.report_date,
+                report_size: report.report_size,
+                hasReport: report.report_down !== null
+            }));
 
-        const reports = results.map(report => ({
-            report_no: report.report_no,
-            report_down: report.report_down,
-            report_filename: report.report_filename,
-            report_date: report.report_date,
-            report_size: report.report_size,
-            hasReport: report.report_down !== null
-        }));
+            res.json({ success: true, data: reports });
+        } catch (error) {
+            console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
+            res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
+        }
+    } else {
+        try {
+            const [results] = await pool.query(query, [schoolId]);
 
-        res.json({ success: true, data: reports });
-    } catch (error) {
-        console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
-        res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
+            const reports = results.map(report => ({
+                report_no: report.report_no,
+                report_down: report.report_down,
+                report_filename: report.report_filename,
+                report_date: report.report_date,
+                report_size: report.report_size,
+                hasReport: report.report_down !== null
+            }));
+
+            res.json({ success: true, data: reports });
+        } catch (error) {
+            console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
+            res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
+        }
     }
 });
 
@@ -173,33 +268,57 @@ app.get('/reportdata', async (req, res) => {
 app.get('/reportdown', async (req, res) => {
     const schoolId = req.query.school_id;
     const no = req.query.no;
+    const currentschool = req.query.currentschool;
 
     const query = `
         SELECT report_date, report_filename, report_down
         FROM sys.report 
         WHERE school_id = ? AND report_no = ?
     `;
+    if (schoolId == 'admin') {
+        try {
+            const [results] = await pool.query(query, [currentschool, no]);
 
-    try {
-        const [results] = await pool.query(query, [schoolId, no]);
+            if (results.length > 0 && results[0].report_down) {
+                const report = results[0];
+                const filename = report.report_filename || `report_${no}`;
+                const extension = path.extname(filename) || '.pdf';
+                const mimeType = mime.default.getType(extension) || 'application/octet-stream';
 
-        if (results.length > 0 && results[0].report_down) {
-            const report = results[0];
-            const filename = report.report_filename || `report_${no}`;
-            const extension = path.extname(filename) || '.pdf';
-            const mimeType = mime.default.getType(extension) || 'application/octet-stream';
+                const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
+                res.setHeader('Content-Type', mimeType);
+                res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
 
-            const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
-            res.setHeader('Content-Type', mimeType);
-            res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
-
-            res.send(report.report_down);
-        } else {
-            res.status(404).json({ error: '보고서 데이터가 존재하지 않습니다.' });
+                res.send(report.report_down);
+            } else {
+                res.status(404).json({ error: '보고서 데이터가 존재하지 않습니다.' });
+            }
+        } catch (error) {
+            console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
+            res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
         }
-    } catch (error) {
-        console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
-        res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
+    } else {
+        try {
+            const [results] = await pool.query(query, [schoolId, no]);
+
+            if (results.length > 0 && results[0].report_down) {
+                const report = results[0];
+                const filename = report.report_filename || `report_${no}`;
+                const extension = path.extname(filename) || '.pdf';
+                const mimeType = mime.default.getType(extension) || 'application/octet-stream';
+
+                const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
+                res.setHeader('Content-Type', mimeType);
+                res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+
+                res.send(report.report_down);
+            } else {
+                res.status(404).json({ error: '보고서 데이터가 존재하지 않습니다.' });
+            }
+        } catch (error) {
+            console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
+            res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
+        }
     }
 });
 
@@ -300,6 +419,135 @@ app.post('/estimate-request', upload.any(), async (req, res) => {
     }
 });
 
+// /saveEquipmentInfo API
+app.post('/saveEquipmentInfo', async (req, res) => {
+    const equipmentData = req.body; // 배열 형태로 받아옵니다
+    const school_id = req.query.from;
+    const userId = req.query.userId;
+    let connection;
+
+    try {
+        if (!school_id) {
+            return res.status(400).json({ success: false, message: 'school_id가 필요합니다.' });
+        }
+
+        connection = await pool.getConnection();
+
+        // 트랜잭션 시작
+        await connection.beginTransaction();
+
+        // Step 1: 클라이언트로부터 전달된 eq_no 목록 추출
+        const newEqNos = equipmentData.map(equipment => equipment.eq_no);
+
+        // Step 2: 기존 데이터와 비교하여 삭제할 목록 찾기
+        const [existingData] = await connection.query(
+            'SELECT eq_no FROM sys.school_info WHERE school_id = ?',
+            [school_id]
+        );
+        const existingEqNos = existingData.map(row => row.eq_no);
+
+        // 기존 데이터 중 새 데이터에 없는 항목 삭제 (차등 업데이트)
+        const toDelete = existingEqNos.filter(eq_no => !newEqNos.includes(eq_no));
+        if (toDelete.length > 0) {
+            await connection.query(
+                'DELETE FROM sys.school_info WHERE school_id = ? AND eq_no IN (?)',
+                [school_id, toDelete]
+            );
+        }
+
+        // Step 3: 요청된 데이터 삽입/업데이트
+        const insertOrUpdateQuery = `
+            INSERT INTO sys.school_info (
+                school_id, eq_no, deviceType, manufacturer, modelName, precount, presize,
+                mediumcount, mediumsize, hepacount, hepasize, location
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                deviceType = VALUES(deviceType),
+                manufacturer = VALUES(manufacturer),
+                modelName = VALUES(modelName),
+                precount = VALUES(precount),
+                presize = VALUES(presize),
+                mediumcount = VALUES(mediumcount),
+                mediumsize = VALUES(mediumsize),
+                hepacount = VALUES(hepacount),
+                hepasize = VALUES(hepasize),
+                location = VALUES(location)
+        `;
+
+        for (const equipment of equipmentData) {
+            const {
+                eq_no,
+                deviceType,
+                manufacturer,
+                modelName,
+                precount,
+                presize,
+                mediumcount,
+                mediumsize,
+                hepacount,
+                hepasize,
+                location
+            } = equipment;
+
+            await connection.query(insertOrUpdateQuery, [
+                school_id,
+                eq_no,
+                deviceType,
+                manufacturer,
+                modelName,
+                precount,
+                presize,
+                mediumcount,
+                mediumsize,
+                hepacount,
+                hepasize,
+                location
+            ]);
+        }
+
+        // Step 4: sys.school 테이블 업데이트
+        const today = new Date();
+        const nextReplacementDate = new Date(today);
+        nextReplacementDate.setMonth(today.getMonth() + 6); // 6개월 후 날짜 설정
+
+        const formattedToday = today.toISOString().split('T')[0];
+        const formattedNextReplacement = nextReplacementDate.toISOString().split('T')[0];
+
+        // 현재 접속한 ID를 통해 NAME을 조회하여 저장
+        const [userResult] = await connection.query(
+            'SELECT NAME FROM sys.account WHERE ID = ?',
+            [userId]
+        );
+
+        if (userResult.length === 0) {
+            throw new Error('해당 사용자 ID를 찾을 수 없습니다.');
+        }
+
+        const userName = userResult[0].NAME;
+
+        // school_info, school_md, school_nextinfo 필드 업데이트
+        await connection.query(
+            `UPDATE sys.school
+             SET school_info = ?, school_md = ?, school_nextinfo = ?
+             WHERE school_id = ?`,
+            [formattedToday, userName, formattedNextReplacement, school_id]
+        );
+
+        // 트랜잭션 커밋
+        await connection.commit();
+        connection.release();
+
+        res.json({ success: true, message: '장비 정보가 성공적으로 저장되었습니다.' });
+    } catch (error) {
+        console.error('장비 정보 저장 중 오류 발생:', error);
+
+        // 트랜잭션 롤백
+        if (connection) await connection.rollback();
+        if (connection) connection.release();
+
+        res.status(500).json({ success: false, message: '장비 정보 저장 중 오류가 발생했습니다.', error: error.message });
+    }
+});
 // 서버 시작
 app.listen(PORT, () => {
     console.log(`서버가 http://218.156.106.25:${PORT} 에서 실행 중입니다.`);

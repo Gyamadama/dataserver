@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>학교 정보 목록</title>
     <style>
-        /* 기존 스타일 그대로 */
         /* 페이지 기본 스타일 */
         body {
             display: flex;
@@ -86,16 +85,24 @@
             margin-left: 220px;
             margin-top: 80px;
             width: calc(100% - 240px);
-            max-width: 1300px;
+            max-width: 1200px;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             padding: 20px;
             position: relative;
+            margin-bottom: 100px;
             box-sizing: border-box;
             overflow-x: auto;
         }
 
+        /* 제목과 검색을 같은 행에 배치 */
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
         /* 제목 스타일 */
         .title {
             font-size: 1.5em;
@@ -103,6 +110,84 @@
             margin-bottom: 20px;
             color: #333;
         }
+
+        /* 검색 입력 스타일 */
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+            .search-container input {
+                padding: 8px;
+                font-size: 14px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                width: 200px;
+                margin-right: 10px;
+            }
+
+            .search-container button {
+                padding: 8px 12px;
+                font-size: 14px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            box-sizing: border-box;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #3366cc;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* 페이징 스타일 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+
+            .pagination button {
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .pagination button.active {
+                    background-color: #0056b3;
+                }
+
+                .pagination button.disabled {
+                    background-color: #ddd;
+                    color: #aaa;
+                    cursor: not-allowed;
+                }
 
         /* 모바일에서 메인 컨테이너 레이아웃 조정 */
         @media (max-width: 768px) {
@@ -125,7 +210,7 @@
         th, td {
             border: 1px solid #ddd;
             padding: 12px;
-            text-align: left;
+            text-align: center;
             box-sizing: border-box;
             word-wrap: break-word;
         }
@@ -134,7 +219,6 @@
             background-color: #3366cc;
             color: white;
             font-weight: bold;
-            text-align: left;
         }
 
         /* 반응형 카드 레이아웃 (작은 화면) */
@@ -142,7 +226,6 @@
             table, thead, tbody, th, td, tr {
                 display: block;
                 width: 100%;
-                max-width: 100%;
             }
 
             th {
@@ -172,16 +255,45 @@
                     margin-right: 5px;
                     color: #333;
                     display: inline-block;
-                    width: 100px;
+                    width: 120px;
                 }
+        }
+        /* '선택' 버튼 스타일 */
+        button.select-button {
+            background-color: #28a745; /* 초록색 배경 */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .hidden{
+            display : none;
         }
     </style>
     <script>
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        const maxPagesToShow = 10;
+        let fullData = [];
+
         function loadSidebar() {
             fetch('sidebar.html')
                 .then(response => response.text())
                 .then(html => {
                     document.getElementById('sidebar-container').innerHTML = html;
+
+                    const userFrom = localStorage.getItem('userFrom');
+                    if (userFrom === 'admin') {
+                        const sidebar = document.querySelector('.sidebar');
+                        const newMenuItem = document.createElement('a');
+                        newMenuItem.href = 'measure_input.html';
+                        newMenuItem.className = 'menu-item';
+                        newMenuItem.textContent = '실측정보입력';
+                        sidebar.appendChild(newMenuItem);
+                    }
                 })
                 .catch(error => console.error('사이드바 로드 중 오류:', error));
         }
@@ -191,13 +303,105 @@
             sidebar.classList.toggle('active');
         }
 
-        document.addEventListener('contextmenu', event => event.preventDefault());
-
         const userFrom = localStorage.getItem('userFrom');
 
         function logout() {
             localStorage.removeItem('userFrom');
+            localStorage.removeItem('currentschool');
             window.location.href = 'login.html';
+        }
+
+        function displayRows(data) {
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const schoolTableBody = document.getElementById('school-table-body');
+
+            schoolTableBody.innerHTML = '';
+
+            data.slice(start, end).forEach(school => {
+                const schoolRow = document.createElement('tr');
+                schoolRow.innerHTML = `
+                        <td data-label="학교ID">${school.school_id}</td>
+                        <td data-label="학교명">${school.school_name}</td>
+                        <td data-label="학교급">${school.school_grade}</td>
+                        <td data-label="학교설립일">${school.school_create}</td>
+                        <td data-label="구분">${school.school_type}</td>
+                        <td data-label="지번주소">${school.school_address1}</td>
+                        <td data-label="도로명주소">${school.school_address2}</td>
+                        <td data-label="교체일">${school.school_info}</td>
+                        <td data-label="학교담당자">${school.school_md}</td>
+                        <td data-label="다음교체일">${school.school_nextinfo}</td>
+                        <td><button class="select-button" onclick="selectSchool('${school.school_id}')">선택</button></td>
+                    `;
+                schoolTableBody.appendChild(schoolRow);
+            });
+
+            renderPagination(data);
+        }
+
+        function selectSchool(schoolId) {
+            localStorage.setItem('currentschool', schoolId);
+            alert(`학교 ID ${schoolId}가 선택되었습니다.`);
+            window.location.href = 'http://218.156.106.25:5000/measure_input.html';
+        }
+
+        function renderPagination(data) {
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = '';
+            const pageCount = Math.ceil(data.length / rowsPerPage);
+            const startPage = Math.floor((currentPage - 1) / maxPagesToShow) * maxPagesToShow + 1;
+            const endPage = Math.min(startPage + maxPagesToShow - 1, pageCount);
+
+            if (currentPage > 100) {
+                const fastBackButton = document.createElement('button');
+                fastBackButton.innerHTML = '&laquo;';
+                fastBackButton.addEventListener('click', () => {
+                    currentPage = Math.max(1, currentPage - 100);
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(fastBackButton);
+            }
+
+            if (currentPage > 1) {
+                const prevButton = document.createElement('button');
+                prevButton.innerHTML = '&lsaquo;';
+                prevButton.addEventListener('click', () => {
+                    currentPage--;
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(prevButton);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                if (i === currentPage) button.classList.add('active');
+                button.addEventListener('click', () => {
+                    currentPage = i;
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(button);
+            }
+
+            if (currentPage < pageCount) {
+                const nextButton = document.createElement('button');
+                nextButton.innerHTML = '&rsaquo;';
+                nextButton.addEventListener('click', () => {
+                    currentPage++;
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(nextButton);
+            }
+
+            if (currentPage + 100 <= pageCount) {
+                const fastNextButton = document.createElement('button');
+                fastNextButton.innerHTML = '&raquo;';
+                fastNextButton.addEventListener('click', () => {
+                    currentPage = Math.min(pageCount, currentPage + 100);
+                    displayRows(data);
+                });
+                paginationContainer.appendChild(fastNextButton);
+            }
         }
 
         function loadSchoolInfo() {
@@ -205,41 +409,38 @@
                 alert('로그인 정보가 없습니다.');
                 return;
             }
-
             fetch(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
                 .then(response => response.json())
                 .then(data => {
-                    const schoolTable = document.getElementById('school-table');
-                    const schoolTableBody = schoolTable.getElementsByTagName('tbody')[0];
+                    fullData = data;
+                    displayRows(data);
+                })
+                .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
+        }
 
-                    schoolTableBody.innerHTML = '';
-
-                    if (data.length > 0) {
-                        data.forEach(school => {
-                            const schoolRow = document.createElement('tr');
-                            schoolRow.innerHTML = `
-                                    <td data-label="학교ID">${school.school_id}</td>
-                                    <td data-label="학교명">${school.school_name}</td>
-                                    <td data-label="학교급">${school.school_grade}</td>
-                                    <td data-label="학교설립일">${school.school_create}</td>
-                                    <td data-label="구분">${school.school_type}</td>
-                                    <td data-label="지번주소">${school.school_address1}</td>
-                                    <td data-label="도로명주소">${school.school_address2}</td>
-                                    <td data-label="교체일">${school.school_info}</td>
-                                    <td data-label="학교담당자">${school.school_md}</td>
-                                    <td data-label="다음교체일">${school.school_nextinfo}</td>
-                                `;
-                            schoolTableBody.appendChild(schoolRow);
-                        });
-                        schoolTable.style.display = 'table';
-                    }
+        function searchTable() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            fetch(`http://218.156.106.25:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(filteredData => {
+                    currentPage = 1;
+                    displayRows(filteredData);
                 })
                 .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            
             loadSidebar();
             loadSchoolInfo();
+            const searchContainer = document.getElementById('search-container');
+
+            if (userFrom != 'admin') {
+                searchContainer.classList.add('hidden');
+            } else {
+                searchContainer.classList.remove('hidden');
+
+            }
         });
     </script>
 </head>
@@ -252,8 +453,13 @@
     <div id="sidebar-container"></div>
 
     <div class="container">
-        <!-- 학교 정보 제목 추가 -->
-        <div class="title">학교 정보</div>
+        <div class="title-container">
+            <div class="title">학교 정보</div>
+            <div class="search-container" id="search-container">
+                <input type="text" id="search-input" placeholder="검색어 입력...">
+                <button onclick="searchTable()">검색</button>
+            </div>
+        </div>
         <table id="school-table">
             <thead>
                 <tr>
@@ -267,12 +473,16 @@
                     <th>교체일</th>
                     <th>학교담당자</th>
                     <th>다음교체일</th>
+                    <th>선택</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="school-table-body">
                 <!-- JavaScript로 데이터가 여기에 추가됩니다. -->
             </tbody>
         </table>
+        <div id="pagination" class="pagination">
+            <!-- JavaScript로 페이지 버튼이 여기에 추가됩니다. -->
+        </div>
     </div>
 </body>
 </html>
