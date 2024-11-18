@@ -11,7 +11,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: 80vh;
             margin: 0;
             font-family: Arial, sans-serif;
             background-color: #f4f6f9;
@@ -184,7 +184,6 @@
         </div>
 
     </div>
-    <img src="미래세이프티_로고_전면.png" alt="회사 로고" class="logo">
 
     <!-- 견적문의 버튼 추가 -->
     <button class="quote-btn" onclick="location.href='quotes.html'">견적문의</button>
@@ -200,14 +199,27 @@
                 document.getElementById('password').value = savedPassword;
                 document.getElementById('rememberMe').checked = true;
             }
+            displayMessageFromQuery();
         });
+
+                // URL 쿼리 파라미터에서 메시지 읽기
+        function displayMessageFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            const message = params.get('message');
+            localStorage.removeItem('userFrom');
+            localStorage.removeItem('currentschool');
+
+            if (message) {
+                alert(message); // 알림 표시
+            }
+        }
 
         function login() {
             const userId = document.getElementById('userId').value;
             const password = document.getElementById('password').value;
             const rememberMe = document.getElementById('rememberMe').checked;
 
-            fetch('http://218.156.106.25:5000/login', {
+            fetch('http://localhost:5000/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -235,6 +247,7 @@
                     }
                 })
                 .catch(error => console.error('로그인 중 오류가 발생했습니다:', error));
+
         }
 
         function goToSignup() {

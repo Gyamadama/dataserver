@@ -50,7 +50,7 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="public\signup.html" />
-    <Content Include="public\미래세이프티_로고_전면.png" />
+    <Content Include="public\logo.png" />
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>

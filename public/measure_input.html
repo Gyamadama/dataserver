@@ -84,6 +84,7 @@
         .container {
             margin-left: 220px;
             margin-top: 80px;
+            margin-bottom: 100px;
             width: calc(100% - 240px);
             max-width: 1200px;
             background-color: #ffffff;
@@ -307,6 +308,17 @@
             const equipmentCount = tableBody.rows.length;
             document.getElementById('equipment-count').textContent = `장비대수: ${equipmentCount}개`;
         }
+
+        async function fetchWithSessionCheck(url, options = {}) {
+            const response = await fetch(url, { ...options, credentials: 'include' });
+            if (response.status === 401) {
+                alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
+                window.location.href = 'login.html';
+                throw new Error('세션 만료'); // 명확하게 에러를 던져 처리
+            }
+            return await response; // JSON 데이터 반환
+        }
+
         function saveDataToServer() {
             const rows = document.querySelectorAll('#measure-table-body tr');
             const dataToSave = Array.from(rows).map(row => {
@@ -326,7 +338,7 @@
                 };
             });
 
-            fetch(`http://218.156.106.25:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
+            fetchWithSessionCheck(`http://localhost:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSave)
@@ -345,11 +357,11 @@
                 return;
             }
             if (!currentSchool) {
-                alert('선택된 학교가없습니다. "학교정보" 페이지에서 실측을 진행할 학교를 선택하세요.');
+                alert('선택된 학교가없습니다. "학교정보" 메뉴에서 학교를 선택하세요.');
                 return;
             }
 
-            fetch(`http://218.156.106.25:5000/equipmentinfo?from=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/equipmentinfo?from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(item => {

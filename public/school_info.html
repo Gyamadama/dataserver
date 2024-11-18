@@ -123,7 +123,7 @@
                 font-size: 14px;
                 border: 1px solid #ddd;
                 border-radius: 4px;
-                width: 200px;
+                width: 150px;
                 margin-right: 10px;
             }
 
@@ -342,7 +342,7 @@
         function selectSchool(schoolId) {
             localStorage.setItem('currentschool', schoolId);
             alert(`학교 ID ${schoolId}가 선택되었습니다.`);
-            window.location.href = 'http://218.156.106.25:5000/measure_input.html';
+            window.location.href = 'http://localhost:5000/measure_input.html';
         }
 
         function renderPagination(data) {
@@ -409,30 +409,44 @@
                 alert('로그인 정보가 없습니다.');
                 return;
             }
-            fetch(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
-                .then(response => response.json())
+            fetchWithSessionCheck(`http://localhost:5000/schoolinfo?from=${userFrom}`)
                 .then(data => {
-                    fullData = data;
-                    displayRows(data);
+                    if (data) {
+                        fullData = data;
+                        displayRows(data);
+                    }
                 })
                 .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
         }
 
         function searchTable() {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            fetch(`http://218.156.106.25:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
-                .then(response => response.json())
+            fetchWithSessionCheck(`http://localhost:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
                 .then(filteredData => {
-                    currentPage = 1;
-                    displayRows(filteredData);
+                    if (filteredData) {
+                        currentPage = 1;
+                        displayRows(filteredData);
+                    }
                 })
                 .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
+        }
+
+        async function fetchWithSessionCheck(url, options = {}) {
+            const response = await fetch(url, { ...options, credentials: 'include' });
+            
+            if (response.status === 401) {
+                alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
+                window.location.href = 'login.html';
+                throw new Error('세션 만료'); // 명확하게 에러를 던져 처리
+            }
+            return await response.json(); // JSON 데이터 반환
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             
             loadSidebar();
             loadSchoolInfo();
+
             const searchContainer = document.getElementById('search-container');
 
             if (userFrom != 'admin') {

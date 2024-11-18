@@ -10,7 +10,7 @@
             font-family: Arial, sans-serif;
             background-color: #f7f8fa;
             margin: 0;
-            padding-top: 50px;
+            padding-top: 20px;
             padding-bottom: 50px;
             display: flex;
             justify-content: center;
@@ -307,7 +307,7 @@
             event.preventDefault();
             const formData = new FormData(event.target);
 
-            fetch('http://218.156.106.25:5000/estimate-request', {
+            fetch('http://localhost:5000/estimate-request', {
                 method: 'POST',
                 body: formData
             })

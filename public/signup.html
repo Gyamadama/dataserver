@@ -175,7 +175,6 @@
         <p>이미 계정이 있으신가요? <a href="login.html">로그인</a></p>
     </div>
     <!-- 회사 로고 이미지 추가 -->
-    <img src="미래세이프티_로고_전면.png" alt="회사 로고" class="logo">
 
     <script>
         let captchaText = "";
@@ -241,6 +240,16 @@
                 captchaVerified = false;
             }
         }
+        async function fetchWithSessionCheck(url, options = {}) {
+            const response = await fetch(url, { ...options, credentials: 'include' });
+
+            if (response.status === 401) {
+                alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
+                window.location.href = 'login.html';
+                throw new Error('세션 만료'); // 명확하게 에러를 던져 처리
+            }
+            return await response.json(); // JSON 데이터 반환
+        }
 
         // 회원가입 요청 함수
         function signup() {
@@ -264,14 +273,13 @@
                 return;
             }
 
-            fetch('http://218.156.106.25:5000/signup', {
+            fetchWithSessionCheck('http://localhost:5000/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ userId, password, name, phone, school, position, officePhone, email })
             })
-                .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert('회원가입이 완료되었습니다.');

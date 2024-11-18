@@ -216,6 +216,40 @@
                     width: 100px;
                 }
         }
+        /* 새 행 추가 버튼 스타일 */
+        .add-row-btn {
+            margin-top: 20px;
+            padding: 10px 15px;
+            font-size: 1em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* 저장 버튼 스타일 */
+        .save-btn {
+            margin-top: 20px;
+            padding: 10px 15px;
+            font-size: 1em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        /* 행 삭제 버튼 스타일 */
+        .delete-row-btn {
+            padding: 5px 10px;
+            font-size: 0.9em;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
     <script>
         function loadSidebar() {
@@ -259,30 +293,7 @@
         }
         const userFrom = localStorage.getItem('userFrom');
         const currentschool = localStorage.getItem('currentschool');
-        // 보고서 데이터 로드 함수
-        function loadReportData() {
-            
-            fetch(`http://218.156.106.25:5000/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        sortedData = data.data.sort((a, b) => a.report_no - b.report_no);
-                        displayPage(currentPage);
-                        createPagination();
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('보고서 데이터 로드 중 오류 발생:', error);
-                    alert('보고서 데이터를 로드하는 데 실패했습니다.');
-                });
-        }
+        
 
         // 페이지네이션 및 데이터 표시 함수
         let currentPage = 1;
@@ -309,6 +320,11 @@
                             <button class="download-btn ${report.hasReport ? "active" : "inactive"}"
                                     ${report.report_down ? `onclick="downloadReport('${report.report_no}')"` : "disabled"}>
                                 다운로드
+                            </button>
+                        </td>
+                        <td data-label="삭제">
+                            <button class="delete-row-btn" onclick="deleteReport('${report.report_no}')">
+                                X
                             </button>
                         </td>
                     `;
@@ -341,13 +357,54 @@
             }
         }
 
+        async function fetchWithSessionCheck(url, options = {}) {
+            const response = await fetch(url, { ...options, credentials: 'include' });
+            if (response.status === 401) {
+                alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
+                window.location.href = 'login.html';
+                throw new Error('세션 만료'); // 명확하게 에러를 던져 처리
+            }
+            return await response; // JSON 데이터 반환
+        }
+
+        // 보고서 데이터 로드 함수
+        function loadReportData() {
+            if (userFrom == 'admin' && !currentschool) {
+                alert('선택된 학교가없습니다. "학교정보" 메뉴에서 학교를 선택하세요.');
+                return;
+            }
+
+            fetchWithSessionCheck(`http://localhost:5000/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('보고서 데이터를 로드하는 중 서버 오류 발생');
+                    }
+                    return response.json(); // JSON 데이터로 변환
+                })
+                .then(data => {
+
+                    if (data.success) {
+                        sortedData = data.data.sort((a, b) => a.report_no - b.report_no);
+                        displayPage(currentPage);
+                        createPagination();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('보고서 데이터 로드 중 오류 발생:', error);
+                    alert('보고서 데이터를 로드하는 데 실패했습니다.');
+                });
+        }
+
         // 보고서 다운로드 함수
         function downloadReport(no) {
             const userFrom = localStorage.getItem('userFrom');
-            fetch(`http://218.156.106.25:5000/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('보고서 데이터를 가져오는 중 오류 발생');
+            fetchWithSessionCheck(`http://localhost:5000/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('보고서 데이터를 가져오는 중 오류 발생');
+
                     }
 
                     const disposition = response.headers.get('Content-Disposition');
@@ -377,11 +434,108 @@
                     alert('보고서 다운로드에 실패했습니다.');
                 });
         }
+        // 보고서 삭제 함수
+        function deleteReport(reportNo) {
+            if (!confirm(`정말로 보고서 번호 ${reportNo}를 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            const userFrom = localStorage.getItem('userFrom');
+
+            fetchWithSessionCheck(`http://localhost:5000/deleteReport?report_no=${reportNo}&school_id=${currentschool}`, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`서버 오류: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json(); // JSON 데이터로 변환
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert('보고서가 성공적으로 삭제되었습니다.');
+                        loadReportData(); // 삭제 후 테이블 다시 로드
+                    } else {
+                        alert('삭제 실패: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('삭제 중 오류 발생:', error.message);
+                    alert('삭제 중 오류가 발생했습니다: ' + error.message);
+                });
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             loadSidebar();
             loadReportData();
+
+            // userFrom 값에 따라 버튼 표시 여부 결정
+            const userFrom = localStorage.getItem('userFrom');
+            const addRowBtn = document.getElementById('add-row-btn');
+            const saveBtn = document.getElementById('save-btn');
+
+            if (userFrom !== 'admin') {
+                // admin이 아니면 버튼 숨기기
+                addRowBtn.style.display = 'none';
+                saveBtn.style.display = 'none';
+            }
+
+            // "보고서 업로드" 버튼 클릭 시 파일 선택 창 열기
+            document.getElementById('add-row-btn').addEventListener('click', () => {
+                const fileInput = document.getElementById('file-input');
+                fileInput.click(); // 파일 선택 창 열기
+            });
+
+            // 파일 선택 후 처리
+            document.getElementById('file-input').addEventListener('change', (event) => {
+                const selectedFile = event.target.files[0];
+                if (selectedFile) {
+                    alert(`선택하신 파일 "${selectedFile.name}"을(를) 서버로 전송합니다.`);
+                    sendReportToServer(selectedFile);
+                    // 파일 선택 초기화 (같은 파일 다시 선택 가능)
+                    event.target.value = '';
+
+                }
+            });
+            function sendReportToServer(file) {
+                // 테이블의 현재 행 수 가져오기
+                const tableBody = document.getElementById('report-table-body');
+                const rowCount = tableBody.rows.length; // 현재 행 수 계산
+                const index = rowCount + 1; // 현재 행 수 + 1로 순번 설정
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('no', index);
+                formData.append('date', new Date().toISOString());
+                formData.append('size', (file.size / 1024).toFixed(2) + ' KB');
+
+                fetchWithSessionCheck(`http://localhost:5000/uploadReport?currentschool=${currentschool}`, {
+                    method: 'POST',
+                    body: formData,
+                })
+                    .then(response => {
+                        // 응답 객체를 직접 판단
+                        if (response.ok) {
+                            return response.json(); // JSON 형식으로 변환
+                        } else {
+                            throw new Error(`서버 오류: ${response.status} ${response.statusText}`);
+                        }
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            alert('파일이 성공적으로 업로드되었습니다.');
+                            loadReportData();
+                        } else {
+                            alert('업로드 실패: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('업로드 중 오류 발생:', error.message);
+                        alert('업로드 중 오류가 발생했습니다: ' + error.message);
+                    });
+            }
         });
+        
     </script>
 </head>
 <body>
@@ -405,12 +559,15 @@
                     <th>게시일</th>
                     <th>파일크기</th>
                     <th>자료</th>
+                    <th>삭제</th>
                 </tr>
             </thead>
             <tbody id="report-table-body">
                 <!-- 데이터가 로드될 곳 -->
             </tbody>
         </table>
+        <button id="add-row-btn" class="add-row-btn">보고서 업로드</button>
+        <input type="file" id="file-input" style="display: none;" />
         <!-- 페이지네이션 컨테이너 -->
         <div id="pagination"></div>
     </div>

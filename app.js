@@ -7,8 +7,9 @@ const app = express();
 const PORT = 5000;
 const nodemailer = require('nodemailer');
 const multer = require('multer');
-
+const session = require('express-session');
 const upload = multer({ storage: multer.memoryStorage() });
+const secretKey = crypto.randomBytes(32).toString('hex'); // 32 바이트 길이의 무작위 문자열 생성
 
 require('dotenv').config();
 
@@ -20,7 +21,7 @@ let mime;
 
 // MySQL 풀 설정
 const pool = mysql.createPool({
-    host: '218.156.106.25',
+    host: 'localhost',
     user: 'root',
     password: 'mirae0216!',
     database: 'Mysql',
@@ -37,10 +38,48 @@ const transporter = nodemailer.createTransport({
         pass: process.env.NAVER_PASS
     }
 });
+
+// 세션 설정
+app.use(session({
+    secret: secretKey, // 세션을 위한 고유한 키 설정
+    resave: false, // 요청 중 아무런 수정이 없어도 세션을 저장하지 않도록 설정
+    saveUninitialized: false, // 초기화되지 않은 세션을 저장하지 않음
+    rolling: true, // 요청 시마다 세션 만료 시간 갱신
+    cookie: {
+        maxAge: 60*60*1000 // 세션 만료 시간 설정 (10분)
+    }
+}));
+
+// 세션 만료 체크 미들웨어
+function sessionCheck(req, res, next) {
+    if (!req.session.userId) {
+        if (req.accepts('html')) {
+            // HTML 요청이면 로그인 페이지로 리다이렉트
+            return res.redirect('/login.html?message=세션이 만료되었습니다. 다시 로그인해주세요.');
+        } else {
+            // JSON 요청이면 401 상태 반환
+            return res.status(401).json({ success: false, message: '세션이 만료되었습니다. 다시 로그인해주세요.' });
+        }
+    }
+    next();
+}
+
+app.use((req, res, next) => {
+    const unprotectedRoutes = ['/', '/login', '/signup', '/estimate-request', '/login.html', '/signup.html', '/quotes.html'];
+    if (unprotectedRoutes.includes(req.path)) {
+        return next(); // 세션 체크 제외
+    }
+    sessionCheck(req, res, next); // 세션 체크
+});
 // CORS 설정 및 JSON 파싱 미들웨어 추가
-app.use(cors());
+// CORS 설정
+app.use(cors({
+    origin: 'http://localhost:5000', // 클라이언트의 출처 (URL)
+    credentials: true // 클라이언트 요청에 인증 정보를 포함할 수 있도록 허용
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 // 루트 경로에 접속했을 때 login.html로 리디렉션
 app.get('/', (req, res) => {
@@ -94,6 +133,8 @@ app.post('/login', async (req, res) => {
         const hashedInputPassword = hashPassword(password);
 
         if (hashedInputPassword === user.PWD) {
+            req.session.userId = userId;
+            req.session.userFrom = user.FROM;
             res.json({ success: true, message: '로그인 성공', from: user.FROM });
         } else {
             res.json({ success: false, message: '아이디 또는 비밀번호가 잘못되었습니다.' });
@@ -104,10 +145,26 @@ app.post('/login', async (req, res) => {
     }
 });
 
+// 로그아웃 API
+app.post('/logout', (req, res) => {
+    if (req.session) {
+        req.session.destroy(err => {
+            if (err) {
+                res.status(500).json({ success: false, message: '로그아웃 중 오류가 발생했습니다.' });
+            } else {
+                res.json({ success: true, message: '로그아웃 성공' });
+            }
+        });
+    } else {
+        res.json({ success: true, message: '로그아웃 성공' });
+    }
+});
+
 // 학교 정보 조회 API
 app.get('/schoolinfo', async (req, res) => {
     const userFrom = req.query.from;
     let query = null;
+   
     if (userFrom == 'admin') {
         query = `
         SELECT school_id, school_name, school_grade, school_create, school_type,
@@ -132,7 +189,6 @@ app.get('/schoolinfo', async (req, res) => {
         res.status(500).json({ error: '데이터를 가져오는 중 오류가 발생했습니다.' });
     }
 });
-
 
 app.get('/eqselectinfo', async (req, res) => {
     const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
@@ -162,6 +218,7 @@ app.get('/eqselectinfo', async (req, res) => {
 });
 // schoolselectinfo API
 app.get('/schoolselectinfo', async (req, res) => {
+    
     const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
     const query = `
         SELECT * FROM sys.school
@@ -188,6 +245,7 @@ app.get('/schoolselectinfo', async (req, res) => {
 
 // 장비 정보 조회 API
 app.get('/equipmentinfo', async (req, res) => {
+    
     const userFrom = req.query.from;
     const currentschool = req.query.currentschool;
     const query = `
@@ -218,6 +276,7 @@ app.get('/equipmentinfo', async (req, res) => {
 
 // 보고서 데이터 조회 API
 app.get('/reportdata', async (req, res) => {
+    
     const schoolId = req.query.school_id;
     const currentschool = req.query.currentschool;
     const query = `
@@ -266,6 +325,7 @@ app.get('/reportdata', async (req, res) => {
 
 // 보고서 데이터 다운로드 API (모든 파일 확장자에 대응)
 app.get('/reportdown', async (req, res) => {
+    
     const schoolId = req.query.school_id;
     const no = req.query.no;
     const currentschool = req.query.currentschool;
@@ -325,6 +385,7 @@ app.get('/reportdown', async (req, res) => {
 // 견적 요청 API
 app.post('/estimate-request', upload.any(), async (req, res) => {
     try {
+
         console.log("Received files:", req.files); // 요청된 파일 로그 확인
 
         const {
@@ -421,6 +482,7 @@ app.post('/estimate-request', upload.any(), async (req, res) => {
 
 // /saveEquipmentInfo API
 app.post('/saveEquipmentInfo', async (req, res) => {
+    
     const equipmentData = req.body; // 배열 형태로 받아옵니다
     const school_id = req.query.from;
     const userId = req.query.userId;
@@ -548,7 +610,97 @@ app.post('/saveEquipmentInfo', async (req, res) => {
         res.status(500).json({ success: false, message: '장비 정보 저장 중 오류가 발생했습니다.', error: error.message });
     }
 });
+
+app.post('/uploadReport', upload.any(), async (req, res) => {
+    const { currentschool } = req.query; // 학교 ID를 쿼리로 받음
+    const { no, date, size } = req.body; // 클라이언트에서 전송된 추가 데이터
+
+    try {
+        // 요청 데이터 디버깅
+        console.log('req.files:', req.files); // 업로드된 파일 확인
+        console.log('req.body:', req.body); // 기타 데이터 확인
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: '파일이 업로드되지 않았습니다.' });
+        }
+
+        // MySQL 쿼리 작성
+        const query = `
+            INSERT INTO sys.report (school_id, report_no, report_down, report_date, report_filename, report_size)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `;
+
+        // 첫 번째 파일만 처리 (다중 파일의 경우 반복문 사용)
+        const file = req.files[0];
+        const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        const formattedDate = new Date(date).toISOString().split('T')[0]; // YYYY-MM-DD 형식
+
+        // 파라미터 준비
+        const params = [
+            currentschool, // 학교 ID
+            no, // 보고서 번호
+            file.buffer, // 파일 내용 (MEDIUMBLOB)
+            formattedDate, // 게시일
+            fileName, // 원본 파일명
+            size // 파일 크기
+        ];
+
+        // 데이터베이스에 삽입
+        const [result] = await pool.query(query, params);
+
+        // 성공 응답
+        res.json({
+            success: true,
+            message: '파일이 성공적으로 업로드되었습니다.',
+            result
+        });
+    } catch (error) {
+        console.error('DB 저장 중 오류 발생:', error);
+        res.status(500).json({
+            success: false,
+            message: 'DB 저장 중 오류가 발생했습니다.',
+            error: error.message
+        });
+    }
+});
+
+// 보고서 삭제 API
+app.delete('/deleteReport', async (req, res) => {
+    const { report_no, school_id } = req.query;
+
+    if (!report_no || !school_id) {
+        return res.status(400).json({
+            success: false,
+            message: 'report_no와 school_id가 필요합니다.',
+        });
+    }
+
+    const query = `DELETE FROM sys.report WHERE report_no = ? AND school_id = ?`;
+
+    try {
+        const [result] = await pool.query(query, [report_no, school_id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: '삭제할 보고서를 찾을 수 없습니다.',
+            });
+        }
+
+        res.json({
+            success: true,
+            message: '보고서가 성공적으로 삭제되었습니다.',
+        });
+    } catch (error) {
+        console.error('보고서 삭제 중 오류 발생:', error);
+        res.status(500).json({
+            success: false,
+            message: '보고서를 삭제하는 중 오류가 발생했습니다.',
+        });
+    }
+});
+
 // 서버 시작
 app.listen(PORT, () => {
-    console.log(`서버가 http://218.156.106.25:${PORT} 에서 실행 중입니다.`);
+    console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
 });
