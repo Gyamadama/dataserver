@@ -74,7 +74,7 @@ app.use((req, res, next) => {
 // CORS 설정 및 JSON 파싱 미들웨어 추가
 // CORS 설정
 app.use(cors({
-    origin: 'http://localhost:5000', // 클라이언트의 출처 (URL)
+    origin: 'http://218.156.106.25:5000', // 클라이언트의 출처 (URL)
     credentials: true // 클라이언트 요청에 인증 정보를 포함할 수 있도록 허용
 }));
 app.use(express.json());

@@ -338,7 +338,7 @@
                 };
             });
 
-            fetchWithSessionCheck(`http://localhost:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
+            fetchWithSessionCheck(`http://218.156.106.25:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSave)
@@ -361,7 +361,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://localhost:5000/equipmentinfo?from=${currentSchool}`)
+            fetchWithSessionCheck(`http://218.156.106.25:5000/equipmentinfo?from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(item => {
