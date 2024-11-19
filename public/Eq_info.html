@@ -85,7 +85,7 @@
             margin-left: 220px;
             margin-top: 80px;
             width: calc(100% - 240px);
-            max-width: 1200px;
+            max-width: 1800px;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -298,6 +298,9 @@
             <td data-label="헤파필터 개수">${eq.hepacount}</td>
             <td data-label="헤파필터 사이즈">${eq.hepasize}</td>
             <td data-label="설치 장소">${eq.location}</td>
+            <td data-label="필터교체일">${eq.replaceday}</td>
+            <td data-label="필터청소일">${eq.cleanday}</td>
+            <td data-label="특이사항">${eq.particulas}</td>
         `;
                 eqTableBody.appendChild(eqRow);
             });
@@ -316,7 +319,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/equipmentinfo?from=${userFrom}&currentschool=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/equipmentinfo?from=${userFrom}&currentschool=${currentSchool}`)
                 .then(data => {
                     if (data) {
                         fullData = data;
@@ -328,8 +331,16 @@
         }
 
         function searchTable() {
+            let userFrom = localStorage.getItem('userFrom');
+            let currentSchool = null;
+            if (userFrom == 'admin') {
+                currentSchool = localStorage.getItem('currentschool');
+            } else {
+                currentSchool = userFrom;
+            }
+            
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            fetchWithSessionCheck(`http://218.156.106.25:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}`)
+            fetchWithSessionCheck(`http://localhost:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
                 .then(filteredData => {
                     if (filteredData) {
                         currentPage = 1;
@@ -395,6 +406,9 @@
                     <th>헤파 필터 개수</th>
                     <th>헤파 필터 사이즈</th>
                     <th>설치 장소</th>
+                    <th>필터교체일</th>
+                    <th>필터청소일</th>
+                    <th>특이사항</th>
                 </tr>
             </thead>
             <tbody id="eq-table-body">

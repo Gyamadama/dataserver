@@ -86,7 +86,7 @@
             margin-top: 80px;
             margin-bottom: 100px;
             width: calc(100% - 240px);
-            max-width: 1200px;
+            max-width: 1800px;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -208,6 +208,43 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        /* 검색 입력 스타일 */
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+            .search-container input {
+                padding: 8px;
+                font-size: 14px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                width: 150px;
+                margin-right: 10px;
+            }
+
+            .search-container button {
+                padding: 8px 12px;
+                font-size: 14px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+        .title-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* 왼쪽 정렬 */
+        }
+        /* 제목과 검색을 같은 행에 배치 */
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
     </style>
     <script>
         function loadSidebar() {
@@ -256,7 +293,7 @@
             const columns = [
                 "장비번호", "장치 유형", "제조업체", "모델명", "프리필터 개수",
                 "프리필터 사이즈", "미디엄필터 개수", "미디엄필터 사이즈",
-                "헤파 필터 개수", "헤파 필터 사이즈", "설치 장소"
+                "헤파 필터 개수", "헤파 필터 사이즈", "설치 장소","필터교체일","필터청소일","특이사항"
             ];
 
             columns.forEach(columnName => {
@@ -281,7 +318,9 @@
                         newCell.addEventListener('click', () => makeCellEditable(newCell));
                     } else {
                         // '장비번호'는 현재 행 개수 + 1로 설정
-                        const rowNumber = tableBody.rows.length + 1;
+                        //const rowNumber = tableBody.rows.length + 1;
+                        let code = localStorage.getItem('currentschool');
+                        const rowNumber = Date.now();
                         newCell.textContent = data[columnName] || rowNumber;
                         newCell.classList.add("non-editable");
                     }
@@ -334,11 +373,14 @@
                     mediumsize: cells[7].textContent,
                     hepacount: cells[8].textContent,
                     hepasize: cells[9].textContent,
-                    location: cells[10].textContent
+                    location: cells[10].textContent,
+                    replaceday: cells[11].textContent,
+                    cleanday: cells[12].textContent,
+                    particulas: cells[13].textContent
                 };
             });
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
+            fetchWithSessionCheck(`http://localhost:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSave)
@@ -351,6 +393,52 @@
         const userFrom = localStorage.getItem('userFrom');
         const currentUserID = localStorage.getItem('userId'); // 사용자 ID를 로컬 스토리지에서 가져온다고 가정
 
+        function searchTable() {
+            let userFrom = localStorage.getItem('userFrom');
+            let currentSchool = null;
+            if (userFrom == 'admin') {
+                currentSchool = localStorage.getItem('currentschool');
+            } else {
+                currentSchool = userFrom;
+            }
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+            fetchWithSessionCheck(`http://localhost:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
+                .then(response => response.json())
+                .then(data => {
+                    clearTable();
+                    data.forEach(item => {
+                        // 데이터 항목을 각 컬럼 이름에 맞게 매핑
+                        addNewRow({
+                            "장비번호": item.eq_no,
+                            "장치 유형": item.deviceType,
+                            "제조업체": item.manufacturer,
+                            "모델명": item.modelName,
+                            "프리필터 개수": item.precount,
+                            "프리필터 사이즈": item.presize,
+                            "미디엄필터 개수": item.mediumcount,
+                            "미디엄필터 사이즈": item.mediumsize,
+                            "헤파 필터 개수": item.hepacount,
+                            "헤파 필터 사이즈": item.hepasize,
+                            "설치 장소": item.location,
+                            "필터교체일": item.replaceday,
+                            "필터청소일": item.cleanday,
+                            "특이사항": item.particulas
+                        });
+                    });
+                })
+                .catch(error => console.error('장비 정보를 가져오는 중 오류가 발생했습니다:', error));
+        }
+
+
+        // 테이블 초기화 함수
+        function clearTable() {
+            const tableBody = document.getElementById('measure-table-body');
+            while (tableBody.firstChild) {
+                tableBody.removeChild(tableBody.firstChild);
+            }
+        }
+
         function loadEquipmentInfo() {
             if (!userFrom) {
                 alert('로그인 정보가 없습니다.');
@@ -361,7 +449,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/equipmentinfo?from=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/equipmentinfo?from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(item => {
@@ -377,7 +465,10 @@
                             "미디엄필터 사이즈": item.mediumsize,
                             "헤파 필터 개수": item.hepacount,
                             "헤파 필터 사이즈": item.hepasize,
-                            "설치 장소": item.location
+                            "설치 장소": item.location,
+                            "필터교체일": item.replaceday,
+                            "필터청소일": item.cleanday,
+                            "특이사항": item.particulas
                         });
                     });
                 })
@@ -406,8 +497,20 @@
 
     <!-- 메인 컨테이너 -->
     <div class="container">
-        <div class="title">실측 정보 입력</div>
-        <div id="equipment-count"></div>
+        <div class="title-container">
+            <div class="title-group">
+                <div class="title">실측 정보 입력</div>
+                <div id="equipment-count"></div>
+
+            </div>
+            <div class="search-container" id="search-container">
+                <input type="text" id="search-input" placeholder="검색어 입력...">
+                <button onclick="searchTable()">검색</button>
+            </div>
+        </div>
+        
+        
+
         <table id="measure-table">
             <thead>
                 <tr>
@@ -422,6 +525,9 @@
                     <th>헤파 필터 개수</th>
                     <th>헤파 필터 사이즈</th>
                     <th>설치 장소</th>
+                    <th>필터교체일</th>
+                    <th>필터청소일</th>
+                    <th>특이사항</th>
                     <th>삭제</th>
                 </tr>
             </thead>

@@ -155,7 +155,7 @@
 <body>
     <!-- 상단 로고 이미지 추가 -->
     <!--<img src="./img/MOKKOJI.png" alt="모꼬지 로고" class="logo-top">-->
-    <h2>모꼬지</h2>
+    <h2>모꼬지 웹</h2>
     <p>
         에어필터 유지관리 솔루션
         <br>
@@ -219,7 +219,7 @@
             const password = document.getElementById('password').value;
             const rememberMe = document.getElementById('rememberMe').checked;
 
-            fetch('http://218.156.106.25:5000/login', {
+            fetch('http://localhost:5000/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

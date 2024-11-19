@@ -85,7 +85,7 @@
             margin-left: 220px;
             margin-top: 80px;
             width: calc(100% - 240px);
-            max-width: 1200px;
+            max-width: 1800px;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -289,10 +289,17 @@
                     if (userFrom === 'admin') {
                         const sidebar = document.querySelector('.sidebar');
                         const newMenuItem = document.createElement('a');
+                        //const newMenuItem2 = document.createElement('a');
                         newMenuItem.href = 'measure_input.html';
                         newMenuItem.className = 'menu-item';
                         newMenuItem.textContent = '실측정보입력';
+
+                        //newMenuItem2.href = 'maintenance_info.html';
+                        //newMenuItem2.className = 'menu-item';
+                        //newMenuItem2.textContent = '유지관리정보';
+
                         sidebar.appendChild(newMenuItem);
+                        //sidebar.appendChild(newMenuItem2);
                     }
                 })
                 .catch(error => console.error('사이드바 로드 중 오류:', error));
@@ -320,6 +327,7 @@
 
             data.slice(start, end).forEach(school => {
                 const schoolRow = document.createElement('tr');
+
                 schoolRow.innerHTML = `
                         <td data-label="학교ID">${school.school_id}</td>
                         <td data-label="학교명">${school.school_name}</td>
@@ -330,7 +338,7 @@
                         <td data-label="도로명주소">${school.school_address2}</td>
                         <td data-label="교체일">${school.school_info}</td>
                         <td data-label="학교담당자">${school.school_md}</td>
-                        <td data-label="다음교체일">${school.school_nextinfo}</td>
+                        <td data-label="권장교체일">${school.school_nextinfo}</td>
                         <td><button class="select-button" onclick="selectSchool('${school.school_id}')">선택</button></td>
                     `;
                 schoolTableBody.appendChild(schoolRow);
@@ -342,7 +350,7 @@
         function selectSchool(schoolId) {
             localStorage.setItem('currentschool', schoolId);
             alert(`학교 ID ${schoolId}가 선택되었습니다.`);
-            window.location.href = 'http://218.156.106.25:5000/measure_input.html';
+            window.location.href = 'http://localhost:5000/measure_input.html';
         }
 
         function renderPagination(data) {
@@ -409,7 +417,7 @@
                 alert('로그인 정보가 없습니다.');
                 return;
             }
-            fetchWithSessionCheck(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
+            fetchWithSessionCheck(`http://localhost:5000/schoolinfo?from=${userFrom}`)
                 .then(data => {
                     if (data) {
                         fullData = data;
@@ -421,7 +429,7 @@
 
         function searchTable() {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            fetchWithSessionCheck(`http://218.156.106.25:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
+            fetchWithSessionCheck(`http://localhost:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
                 .then(filteredData => {
                     if (filteredData) {
                         currentPage = 1;
@@ -486,7 +494,7 @@
                     <th>도로명주소</th>
                     <th>교체일</th>
                     <th>학교담당자</th>
-                    <th>다음교체일</th>
+                    <th>권장교체일</th>
                     <th>선택</th>
                 </tr>
             </thead>

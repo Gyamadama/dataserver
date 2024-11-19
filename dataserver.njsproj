@@ -36,6 +36,9 @@
     </Content>
     <Content Include="public\img\MOKKOJI.png" />
     <Content Include="public\login.html" />
+    <Content Include="public\maintenance_info.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="public\measure_input.html">
       <SubType>Code</SubType>
     </Content>

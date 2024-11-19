@@ -82,10 +82,11 @@
 
         /* 메인 컨테이너 스타일 */
         .container {
-            margin-left: 240px;
+            margin-left: 220px;
             margin-top: 80px;
+            margin-bottom: 100px;
             width: calc(100% - 240px);
-            max-width: 1200px;
+            max-width: 1800px;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -113,18 +114,20 @@
             color: #333;
         }
 
+
         /* 테이블 스타일 */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-            table-layout: fixed;
+            box-sizing: border-box;
+            margin: 0;
         }
 
         th, td {
             border: 1px solid #ddd;
             padding: 12px;
             text-align: center;
+            box-sizing: border-box;
             word-wrap: break-word;
         }
 
@@ -374,7 +377,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
+            fetchWithSessionCheck(`http://localhost:5000/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('보고서 데이터를 로드하는 중 서버 오류 발생');
@@ -400,7 +403,7 @@
         // 보고서 다운로드 함수
         function downloadReport(no) {
             const userFrom = localStorage.getItem('userFrom');
-            fetchWithSessionCheck(`http://218.156.106.25:5000/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
+            fetchWithSessionCheck(`http://localhost:5000/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('보고서 데이터를 가져오는 중 오류 발생');
@@ -442,7 +445,7 @@
 
             const userFrom = localStorage.getItem('userFrom');
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/deleteReport?report_no=${reportNo}&school_id=${currentschool}`, {
+            fetchWithSessionCheck(`http://localhost:5000/deleteReport?report_no=${reportNo}&school_id=${currentschool}`, {
                 method: 'DELETE',
             })
                 .then(response => {
@@ -509,7 +512,7 @@
                 formData.append('date', new Date().toISOString());
                 formData.append('size', (file.size / 1024).toFixed(2) + ' KB');
 
-                fetchWithSessionCheck(`http://218.156.106.25:5000/uploadReport?currentschool=${currentschool}`, {
+                fetchWithSessionCheck(`http://localhost:5000/uploadReport?currentschool=${currentschool}`, {
                     method: 'POST',
                     body: formData,
                 })

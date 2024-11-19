@@ -74,7 +74,7 @@ app.use((req, res, next) => {
 // CORS 설정 및 JSON 파싱 미들웨어 추가
 // CORS 설정
 app.use(cors({
-    origin: 'http://218.156.106.25:5000', // 클라이언트의 출처 (URL)
+    origin: 'http://localhost:5000', // 클라이언트의 출처 (URL)
     credentials: true // 클라이언트 요청에 인증 정보를 포함할 수 있도록 허용
 }));
 app.use(express.json());
@@ -190,26 +190,33 @@ app.get('/schoolinfo', async (req, res) => {
     }
 });
 
+/* 장비정보값조회 APU */
 app.get('/eqselectinfo', async (req, res) => {
     const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
+    const from = req.query.from;
     const query = `
         SELECT * FROM sys.school_info
         WHERE school_id LIKE ?
-           OR eq_no LIKE ?
-           OR deviceType LIKE ?
-           OR manufacturer LIKE ?
-           OR modelName LIKE ?
-           OR precount LIKE ?
-           OR presize LIKE ?
-           OR mediumcount LIKE ?
-           OR mediumsize LIKE ?
-           OR hepacount LIKE ?
-           OR hepasize LIKE ?
-           OR location LIKE ?
+           AND (
+               eq_no LIKE ?
+               OR deviceType LIKE ?
+               OR manufacturer LIKE ?
+               OR modelName LIKE ?
+               OR precount LIKE ?
+               OR presize LIKE ?
+               OR mediumcount LIKE ?
+               OR mediumsize LIKE ?
+               OR hepacount LIKE ?
+               OR hepasize LIKE ?
+               OR location LIKE ?
+               OR replaceday LIKE ?
+               OR cleanday LIKE ?
+               OR particulas LIKE ?
+           )
     `;
 
     try {
-        const [results] = await pool.query(query, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
+        const [results] = await pool.query(query, [from, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
         res.json(results);
     } catch (error) {
         console.error('데이터 조회 중 오류 발생:', error);
@@ -250,7 +257,7 @@ app.get('/equipmentinfo', async (req, res) => {
     const currentschool = req.query.currentschool;
     const query = `
     SELECT eq_no, deviceType, manufacturer, modelName, precount, presize,
-            mediumcount, mediumsize, hepacount, hepasize, location
+            mediumcount, mediumsize, hepacount, hepasize, location,replaceday,cleanday, particulas
     FROM sys.school_info
     WHERE school_id = ?
     `;
@@ -521,8 +528,8 @@ app.post('/saveEquipmentInfo', async (req, res) => {
         const insertOrUpdateQuery = `
             INSERT INTO sys.school_info (
                 school_id, eq_no, deviceType, manufacturer, modelName, precount, presize,
-                mediumcount, mediumsize, hepacount, hepasize, location
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                mediumcount, mediumsize, hepacount, hepasize, location,replaceday,cleanday, particulas
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)
             ON DUPLICATE KEY UPDATE
                 deviceType = VALUES(deviceType),
                 manufacturer = VALUES(manufacturer),
@@ -533,7 +540,10 @@ app.post('/saveEquipmentInfo', async (req, res) => {
                 mediumsize = VALUES(mediumsize),
                 hepacount = VALUES(hepacount),
                 hepasize = VALUES(hepasize),
-                location = VALUES(location)
+                location = VALUES(location),
+                replaceday = VALUES(replaceday),
+                cleanday = VALUES(cleanday),
+                particulas = VALUES(particulas)
         `;
 
         for (const equipment of equipmentData) {
@@ -548,7 +558,11 @@ app.post('/saveEquipmentInfo', async (req, res) => {
                 mediumsize,
                 hepacount,
                 hepasize,
-                location
+                location,
+                replaceday,
+                cleanday,
+                particulas
+
             } = equipment;
 
             await connection.query(insertOrUpdateQuery, [
@@ -563,7 +577,10 @@ app.post('/saveEquipmentInfo', async (req, res) => {
                 mediumsize,
                 hepacount,
                 hepasize,
-                location
+                location,
+                replaceday,
+                cleanday,
+                particulas
             ]);
         }
 
