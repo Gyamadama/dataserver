@@ -377,7 +377,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://localhost:5000/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
+            fetchWithSessionCheck(`http://218.156.106.25:5000/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('보고서 데이터를 로드하는 중 서버 오류 발생');
@@ -403,7 +403,7 @@
         // 보고서 다운로드 함수
         function downloadReport(no) {
             const userFrom = localStorage.getItem('userFrom');
-            fetchWithSessionCheck(`http://localhost:5000/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
+            fetchWithSessionCheck(`http://218.156.106.25:5000/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('보고서 데이터를 가져오는 중 오류 발생');
@@ -445,7 +445,7 @@
 
             const userFrom = localStorage.getItem('userFrom');
 
-            fetchWithSessionCheck(`http://localhost:5000/deleteReport?report_no=${reportNo}&school_id=${currentschool}`, {
+            fetchWithSessionCheck(`http://218.156.106.25:5000/deleteReport?report_no=${reportNo}&school_id=${currentschool}`, {
                 method: 'DELETE',
             })
                 .then(response => {
@@ -512,7 +512,7 @@
                 formData.append('date', new Date().toISOString());
                 formData.append('size', (file.size / 1024).toFixed(2) + ' KB');
 
-                fetchWithSessionCheck(`http://localhost:5000/uploadReport?currentschool=${currentschool}`, {
+                fetchWithSessionCheck(`http://218.156.106.25:5000/uploadReport?currentschool=${currentschool}`, {
                     method: 'POST',
                     body: formData,
                 })
