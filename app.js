@@ -46,7 +46,7 @@ app.use(session({
     saveUninitialized: false, // 초기화되지 않은 세션을 저장하지 않음
     rolling: true, // 요청 시마다 세션 만료 시간 갱신
     cookie: {
-        maxAge: 1*1*1000 // 세션 만료 시간 설정 (10분)
+        maxAge: 60*60*1000 // 세션 만료 시간 설정 (10분)
     }
 }));
 
