@@ -168,13 +168,13 @@ app.get('/schoolinfo', async (req, res) => {
     if (userFrom == 'admin') {
         query = `
         SELECT school_id, school_name, school_grade, school_create, school_type,
-               school_address1, school_address2, school_info, school_inspection, school_md, school_nextinfo
+               school_address1, school_address2, school_info, school_inspection, school_md, school_nextinfo, school_particulas
         FROM sys.school
         `;
     } else {
         query = `
         SELECT school_id, school_name, school_grade, school_create, school_type,
-               school_address1, school_address2, school_info, school_inspection,school_md, school_nextinfo
+               school_address1, school_address2, school_info, school_inspection,school_md, school_nextinfo, school_particulas
         FROM sys.school
         WHERE school_id = ?
         `;
@@ -240,10 +240,11 @@ app.get('/schoolselectinfo', async (req, res) => {
            OR school_inspection LIKE ?
            OR school_md LIKE ?
            OR school_nextinfo LIKE ?
+           OR school_particulas LIKE ?
     `;
 
     try {
-        const [results] = await pool.query(query, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
+        const [results] = await pool.query(query, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
         res.json(results);
     } catch (error) {
         console.error('데이터 조회 중 오류 발생:', error);
@@ -631,7 +632,8 @@ app.post('/updateSchools', async (req, res) => {
     const query = `
         UPDATE sys.school
         SET school_info = ?, 
-            school_md = ?
+            school_md = ?,
+            school_particulas = ?
         WHERE school_id = ?
     `;
 
@@ -651,17 +653,37 @@ app.post('/updateSchools', async (req, res) => {
 
         const userName = userResult[0].NAME;
 
+        // 배열 데이터를 처리
         for (const school of schools) {
-            const { school_id, school_info } = school;
+            const { school_id, school_info, school_particulas } = school;
 
             if (!school_id) {
                 throw new Error(`school_id가 없습니다. 요청 데이터: ${JSON.stringify(school)}`);
             }
-            school_md = userName;
-            
+
+            // 기존 데이터 가져오기
+            const [existingData] = await connection.query(
+                'SELECT school_info, school_particulas FROM sys.school WHERE school_id = ?',
+                [school_id]
+            );
+
+            if (existingData.length === 0) {
+                throw new Error(`school_id ${school_id}에 해당하는 데이터가 없습니다.`);
+            }
+
+            const existingSchool = existingData[0];
+
+            // 기존 데이터와 클라이언트 데이터를 병합
+            const mergedData = {
+                school_info: school_info || existingSchool.school_info,
+                school_particulas: school_particulas || existingSchool.school_particulas,
+            };
+
+            // SQL 실행
             await connection.query(query, [
-                school_info || null,
-                school_md || null,
+                mergedData.school_info,
+                userName,
+                mergedData.school_particulas,
                 school_id,
             ]);
         }

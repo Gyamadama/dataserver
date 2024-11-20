@@ -365,37 +365,58 @@
                         ${
                             userFrom === 'admin'
                             ? `<td data-label="영업일">
-                            <input type="date" value="${school.school_info}" data-school-id="${school.school_id}" class="change-input" />
+                            <input type="date" value="${school.school_info}" data-school-id="${school.school_id}" class="change-input" data-column="school_info" />
                             </td>`
                             : `<td style="display: none;" data-label="영업일"></td>`
                         }
                         <td data-label="점검일"> ${school.school_inspection}</td>
                         <td data-label="학교담당자">${school.school_md}</td>
                         <td data-label="권장점검일">${school.school_nextinfo}</td>
+                        ${
+                            userFrom === 'admin'
+                            ? `<td data-label="특이사항" contenteditable="true" data-school-id="${school.school_id}" class="change-input" data-column="school_particulas">
+                            ${school.school_particulas || ''}
+                            </td>`
+                            : `<td style="display: none;" data-label="특이사항"></td>`
+                        }
                         <td data-label="선택"><button class="select-button" onclick="selectSchool('${school.school_id}')">O</button></td>
                     `;
                 schoolTableBody.appendChild(schoolRow);
             });
-            // 모든 input 요소에 change 이벤트 리스너 추가
-            document.querySelectorAll('.change-input').forEach(input => {
-                input.addEventListener('change', () => {
-                    const schoolId = input.dataset.schoolId;
-                    const updatedValue = input.value;
-                    const currentUserID = localStorage.getItem('userId'); // 사용자 ID를 로컬 스토리지에서 가져온다고 가정
+
+            // 모든 contenteditable 요소에 이벤트 리스너 추가
+            document.querySelectorAll('.change-input').forEach(cell => {
+                cell.addEventListener('blur', () => {
+                    const schoolId = cell.dataset.schoolId; // 학교 ID 가져오기
+                    const column = cell.dataset.column; // 컬럼 이름 (예: 'school_info' 또는 'school_particulas')
+                    const currentUserID = localStorage.getItem('userId'); // 사용자 ID 가져오기
+
+                    let updatedValue;
+
+                    // input 요소와 contenteditable 요소 구분 처리
+                    if (cell.tagName === 'INPUT') {
+                        updatedValue = cell.value; // input의 값 가져오기
+                    } else {
+                        updatedValue = cell.textContent.trim(); // contenteditable의 텍스트 가져오기
+                    }
+
                     // 이미 수정된 데이터가 있는지 확인
-                    const existingRow = modifiedRows.find(row => row.school_id === schoolId);
+                    let existingRow = modifiedRows.find(row => row.school_id === schoolId);
 
                     if (existingRow) {
                         // 기존 데이터를 업데이트
-                        existingRow.school_info = updatedValue;
+                        existingRow[column] = updatedValue;
                     } else {
                         // 새로운 데이터를 추가
-                        modifiedRows.push({
+                        const newRow = {
                             school_id: schoolId,
-                            school_info: updatedValue,
-                            school_md: currentUserID // 관리자로 설정
-                        });
+                            school_md: currentUserID // 사용자 ID 추가
+                        };
+                        newRow[column] = updatedValue; // 컬럼 값 동적 추가
+                        modifiedRows.push(newRow);
                     }
+
+                    console.log('Modified Rows:', modifiedRows); // 디버깅용
                 });
             });
             renderPagination(data);
@@ -546,6 +567,7 @@
                 searchContainer.classList.add('hidden');
                 saveButton.classList.add('hidden');
                 document.getElementById('info-header').style.display = 'none';
+                document.getElementById('particulas-header').style.display = 'none';
 
             } else {
                 searchContainer.classList.remove('hidden');
@@ -602,6 +624,7 @@
                     <th>점검일</th>
                     <th>학교담당자</th>
                     <th>권장점검일</th>
+                    <th id="particulas-header">특이사항</th>
                     <th>선택</th>
                 </tr>
             </thead>
