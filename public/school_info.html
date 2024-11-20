@@ -404,7 +404,7 @@
         function selectSchool(schoolId) {
             localStorage.setItem('currentschool', schoolId);
             alert(`학교 ID ${schoolId}가 선택되었습니다.`);
-            window.location.href = 'http://localhost:5000/measure_input.html';
+            window.location.href = 'http://218.156.106.25:5000/measure_input.html';
         }
 
         function renderPagination(data) {
@@ -472,7 +472,7 @@
                 return;
             }
 
-            fetchWithSessionCheck('http://localhost:5000/updateSchools', {
+            fetchWithSessionCheck('http://218.156.106.25:5000/updateSchools', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(modifiedRows)
@@ -495,7 +495,7 @@
                 alert('로그인 정보가 없습니다.');
                 return;
             }
-            fetchWithSessionCheck(`http://localhost:5000/schoolinfo?from=${userFrom}`)
+            fetchWithSessionCheck(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
                 .then(data => {
                     if (data) {
                         fullData = data;
@@ -510,7 +510,7 @@
 
         function searchTable() {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            fetchWithSessionCheck(`http://localhost:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
+            fetchWithSessionCheck(`http://218.156.106.25:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
                 .then(filteredData => {
                     if (filteredData) {
                         currentPage = 1;
