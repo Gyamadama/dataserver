@@ -46,7 +46,7 @@ app.use(session({
     saveUninitialized: false, // 초기화되지 않은 세션을 저장하지 않음
     rolling: true, // 요청 시마다 세션 만료 시간 갱신
     cookie: {
-        maxAge: 60*60*1000 // 세션 만료 시간 설정 (10분)
+        maxAge: 1*1*1000 // 세션 만료 시간 설정 (10분)
     }
 }));
 
@@ -74,7 +74,7 @@ app.use((req, res, next) => {
 // CORS 설정 및 JSON 파싱 미들웨어 추가
 // CORS 설정
 app.use(cors({
-    origin: 'http://218.156.106.25:5000', // 클라이언트의 출처 (URL)
+    origin: 'http://localhost:5000', // 클라이언트의 출처 (URL)
     credentials: true // 클라이언트 요청에 인증 정보를 포함할 수 있도록 허용
 }));
 app.use(express.json());
@@ -168,13 +168,13 @@ app.get('/schoolinfo', async (req, res) => {
     if (userFrom == 'admin') {
         query = `
         SELECT school_id, school_name, school_grade, school_create, school_type,
-               school_address1, school_address2, school_info, school_md, school_nextinfo
+               school_address1, school_address2, school_info, school_inspection, school_md, school_nextinfo
         FROM sys.school
         `;
     } else {
         query = `
         SELECT school_id, school_name, school_grade, school_create, school_type,
-               school_address1, school_address2, school_info, school_md, school_nextinfo
+               school_address1, school_address2, school_info, school_inspection,school_md, school_nextinfo
         FROM sys.school
         WHERE school_id = ?
         `;
@@ -592,24 +592,12 @@ app.post('/saveEquipmentInfo', async (req, res) => {
         const formattedToday = today.toISOString().split('T')[0];
         const formattedNextReplacement = nextReplacementDate.toISOString().split('T')[0];
 
-        // 현재 접속한 ID를 통해 NAME을 조회하여 저장
-        const [userResult] = await connection.query(
-            'SELECT NAME FROM sys.account WHERE ID = ?',
-            [userId]
-        );
-
-        if (userResult.length === 0) {
-            throw new Error('해당 사용자 ID를 찾을 수 없습니다.');
-        }
-
-        const userName = userResult[0].NAME;
-
         // school_info, school_md, school_nextinfo 필드 업데이트
         await connection.query(
             `UPDATE sys.school
-             SET school_info = ?, school_md = ?, school_nextinfo = ?
+             SET school_inspection = ?, school_nextinfo = ?
              WHERE school_id = ?`,
-            [formattedToday, userName, formattedNextReplacement, school_id]
+            [formattedToday, formattedNextReplacement, school_id]
         );
 
         // 트랜잭션 커밋
@@ -625,6 +613,76 @@ app.post('/saveEquipmentInfo', async (req, res) => {
         if (connection) connection.release();
 
         res.status(500).json({ success: false, message: '장비 정보 저장 중 오류가 발생했습니다.', error: error.message });
+    }
+});
+
+// 학교 정보 업데이트 API (배열 처리)
+app.post('/updateSchools', async (req, res) => {
+    const schools = req.body; // 배열 형태로 데이터를 받음
+
+    if (!Array.isArray(schools) || schools.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: '유효한 데이터 배열이 필요합니다.',
+        });
+    }
+ 
+    const query = `
+        UPDATE sys.school
+        SET school_info = ?, 
+            school_md = ?
+        WHERE school_id = ?
+    `;
+
+    const connection = await pool.getConnection();
+    try {
+        // 트랜잭션 시작
+        await connection.beginTransaction();
+
+        const [userResult] = await connection.query(
+            'SELECT NAME FROM sys.account WHERE ID = ?',
+            [req.body[0].school_md]
+        );
+
+        if (userResult.length === 0) {
+            throw new Error('해당 사용자 ID를 찾을 수 없습니다.');
+        }
+
+        const userName = userResult[0].NAME;
+
+        for (const school of schools) {
+            const { school_id, school_info } = school;
+
+            if (!school_id) {
+                throw new Error(`school_id가 없습니다. 요청 데이터: ${JSON.stringify(school)}`);
+            }
+            school_md = userName;
+            
+            await connection.query(query, [
+                school_info || null,
+                school_md || null,
+                school_id,
+            ]);
+        }
+
+        // 트랜잭션 커밋
+        await connection.commit();
+        connection.release();
+
+        res.json({
+            success: true,
+            message: '모든 학교 정보가 성공적으로 업데이트되었습니다.',
+        });
+    } catch (error) {
+        // 트랜잭션 롤백
+        if (connection) await connection.rollback();
+        connection.release();
+
+        console.error('학교 정보 업데이트 중 오류 발생:', error);
+        res.status(500).json({
+            success: false,
+            message: '학교 정보를 업데이트하는 중 오류가 발생했습니다.',
+        });
     }
 });
 

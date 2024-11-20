@@ -328,6 +328,7 @@
                 newRow.appendChild(newCell);
             });
             const deleteCell = document.createElement('td');
+            deleteCell.setAttribute('data-label', '삭제');
             const deleteButton = document.createElement('button');
             deleteButton.textContent = "X";
             deleteButton.className = "delete-row-btn";
@@ -380,13 +381,18 @@
                 };
             });
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
+            fetchWithSessionCheck(`http://localhost:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSave)
             })
                 .then(response => response.json())
-                .then(data => alert('데이터가 성공적으로 저장되었습니다!'))
+                .then(data => {
+
+                    alert('데이터가 성공적으로 저장되었습니다!');
+                    clearTable();
+                    loadEquipmentInfo();
+                })
                 .catch(error => console.error('데이터 저장 중 오류 발생:', error));
         }
         const currentSchool = localStorage.getItem('currentschool');
@@ -403,7 +409,7 @@
             }
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     clearTable();
@@ -449,7 +455,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/equipmentinfo?from=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/equipmentinfo?from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(item => {

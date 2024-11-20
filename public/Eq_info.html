@@ -319,7 +319,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/equipmentinfo?from=${userFrom}&currentschool=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/equipmentinfo?from=${userFrom}&currentschool=${currentSchool}`)
                 .then(data => {
                     if (data) {
                         fullData = data;
@@ -340,7 +340,7 @@
             }
             
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            fetchWithSessionCheck(`http://218.156.106.25:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
                 .then(filteredData => {
                     if (filteredData) {
                         currentPage = 1;

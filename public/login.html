@@ -179,8 +179,8 @@
         <button class="signup-btn" onclick="goToSignup()">회원가입</button>
 
         <!-- 자동 로그인 체크박스 -->
-        <div class="remember-section">
-            <label><input type="checkbox" id="rememberMe"> 자동로그인</label>
+        <div class="remember-section" style="display:none;">
+            <label><input type="checkbox" id="rememberMe" checked> 자동로그인</label>
         </div>
 
     </div>
@@ -219,7 +219,7 @@
             const password = document.getElementById('password').value;
             const rememberMe = document.getElementById('rememberMe').checked;
 
-            fetch('http://218.156.106.25:5000/login', {
+            fetch('http://localhost:5000/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
