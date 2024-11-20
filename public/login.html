@@ -189,6 +189,19 @@
     <button class="quote-btn" onclick="location.href='quotes.html'">견적문의</button>
 
     <script>
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
+            ) {
+                e.preventDefault();
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             const savedUserId = localStorage.getItem('userId');
             const savedPassword = localStorage.getItem('password');
@@ -219,7 +232,7 @@
             const password = document.getElementById('password').value;
             const rememberMe = document.getElementById('rememberMe').checked;
 
-            fetch('http://218.156.106.25:5000/login', {
+            fetch('http://localhost:5000/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -381,7 +381,7 @@
                 };
             });
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
+            fetchWithSessionCheck(`http://localhost:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSave)
@@ -409,7 +409,7 @@
             }
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     clearTable();
@@ -455,7 +455,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/equipmentinfo?from=${currentSchool}`)
+            fetchWithSessionCheck(`http://localhost:5000/equipmentinfo?from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(item => {
@@ -488,6 +488,19 @@
             document.getElementById('save-btn').addEventListener('click', saveDataToServer); // 저장 버튼 클릭 시 함수 연결
             updateEquipmentCount(); // 행 삭제 시 장비대수 업데이트
 
+        });
+
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
+            ) {
+                e.preventDefault();
+            }
         });
     </script>
 </head>

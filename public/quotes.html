@@ -307,7 +307,7 @@
             event.preventDefault();
             const formData = new FormData(event.target);
 
-            fetch('http://218.156.106.25:5000/estimate-request', {
+            fetch('http://localhost:5000/estimate-request', {
                 method: 'POST',
                 body: formData
             })
@@ -322,6 +322,18 @@
                     console.error('견적 요청 전송 중 오류 발생:', error);
                     alert('견적 요청 전송 중 오류가 발생했습니다.');
                 });
+        });
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
+            ) {
+                e.preventDefault();
+            }
         });
     </script>
 </body>

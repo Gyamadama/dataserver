@@ -10,7 +10,7 @@ const multer = require('multer');
 const session = require('express-session');
 const upload = multer({ storage: multer.memoryStorage() });
 const secretKey = crypto.randomBytes(32).toString('hex'); // 32 바이트 길이의 무작위 문자열 생성
-
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
 require('dotenv').config();
 
 // 동적 import()를 사용하여 mime 모듈을 불러옴
@@ -74,7 +74,7 @@ app.use((req, res, next) => {
 // CORS 설정 및 JSON 파싱 미들웨어 추가
 // CORS 설정
 app.use(cors({
-    origin: 'http://218.156.106.25:5000', // 클라이언트의 출처 (URL)
+    origin: 'http://localhost:5000', // 클라이언트의 출처 (URL)
     credentials: true // 클라이언트 요청에 인증 정보를 포함할 수 있도록 허용
 }));
 app.use(express.json());
@@ -237,12 +237,13 @@ app.get('/schoolselectinfo', async (req, res) => {
            OR school_address1 LIKE ?
            OR school_address2 LIKE ?
            OR school_info LIKE ?
+           OR school_inspection LIKE ?
            OR school_md LIKE ?
            OR school_nextinfo LIKE ?
     `;
 
     try {
-        const [results] = await pool.query(query, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
+        const [results] = await pool.query(query, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
         res.json(results);
     } catch (error) {
         console.error('데이터 조회 중 오류 발생:', error);

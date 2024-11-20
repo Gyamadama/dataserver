@@ -284,6 +284,17 @@
         .hidden{
             display : none;
         }
+        .title-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* 왼쪽 정렬 */
+        }
+        #school-count {
+            font-size: 1em;
+            color: #333;
+            margin-top: 0px;
+            text-align: left; /* 왼쪽 정렬 */
+        }
     </style>
     <script>
         let currentPage = 1;
@@ -393,7 +404,7 @@
         function selectSchool(schoolId) {
             localStorage.setItem('currentschool', schoolId);
             alert(`학교 ID ${schoolId}가 선택되었습니다.`);
-            window.location.href = 'http://218.156.106.25:5000/measure_input.html';
+            window.location.href = 'http://localhost:5000/measure_input.html';
         }
 
         function renderPagination(data) {
@@ -461,7 +472,7 @@
                 return;
             }
 
-            fetchWithSessionCheck('http://218.156.106.25:5000/updateSchools', {
+            fetchWithSessionCheck('http://localhost:5000/updateSchools', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(modifiedRows)
@@ -484,10 +495,13 @@
                 alert('로그인 정보가 없습니다.');
                 return;
             }
-            fetchWithSessionCheck(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
+            fetchWithSessionCheck(`http://localhost:5000/schoolinfo?from=${userFrom}`)
                 .then(data => {
                     if (data) {
                         fullData = data;
+                        const schoolCount = fullData.length;
+                        document.getElementById('school-count').textContent = `학교개수: ${schoolCount}개`;
+
                         displayRows(data);
                     }
                 })
@@ -496,13 +510,15 @@
 
         function searchTable() {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            fetchWithSessionCheck(`http://218.156.106.25:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
+            fetchWithSessionCheck(`http://localhost:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
                 .then(filteredData => {
                     if (filteredData) {
                         currentPage = 1;
+                        const schoolCount = filteredData.length;
+                        document.getElementById('school-count').textContent = `학교개수: ${schoolCount}개`;
                         displayRows(filteredData);
                     }
-                })
+            })
                 .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
         }
 
@@ -537,6 +553,19 @@
 
             }
         });
+
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
+            ) {
+                e.preventDefault();
+            }
+        });
     </script>
 </head>
 <body>
@@ -549,7 +578,11 @@
 
     <div class="container">
         <div class="title-container">
-            <div class="title">학교 정보</div>
+            <div class="title-group">
+                <div class="title">학교 정보</div>
+                <div id="school-count">학교개수: 0개</div>
+            </div>
+
             <div class="search-container" id="search-container">
                 <input type="text" id="search-input" placeholder="검색어 입력...">
                 <button onclick="searchTable()">검색</button>
