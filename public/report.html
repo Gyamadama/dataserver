@@ -520,6 +520,8 @@
                         // 응답 객체를 직접 판단
                         if (response.ok) {
                             return response.json(); // JSON 형식으로 변환
+                        } else if (response.status === 500) {
+                            throw new Error(`파일크기가 너무 큽니다. 파일크기는 16MB를 넘길수 없습니다.`);
                         } else {
                             throw new Error(`서버 오류: ${response.status} ${response.statusText}`);
                         }

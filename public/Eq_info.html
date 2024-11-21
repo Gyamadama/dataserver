@@ -287,20 +287,20 @@
             paginatedData.forEach(eq => {
                 const eqRow = document.createElement('tr');
                 eqRow.innerHTML = `
-            <td data-label="장비번호">${eq.eq_no}</td>
-            <td data-label="장치 유형">${eq.deviceType}</td>
-            <td data-label="제조업체">${eq.manufacturer}</td>
-            <td data-label="모델명">${eq.modelName}</td>
-            <td data-label="프리필터 개수">${eq.precount}</td>
-            <td data-label="프리필터 사이즈">${eq.presize}</td>
-            <td data-label="미디엄필터 개수">${eq.mediumcount}</td>
-            <td data-label="미디엄필터 사이즈">${eq.mediumsize}</td>
-            <td data-label="헤파필터 개수">${eq.hepacount}</td>
-            <td data-label="헤파필터 사이즈">${eq.hepasize}</td>
-            <td data-label="설치 장소">${eq.location}</td>
-            <td data-label="필터교체일">${eq.replaceday}</td>
-            <td data-label="필터청소일">${eq.cleanday}</td>
-            <td data-label="특이사항">${eq.particulas}</td>
+            <td data-label="장비번호">${eq.eq_no||''}</td>
+            <td data-label="장치 유형">${eq.deviceType || ''}</td>
+            <td data-label="제조업체">${eq.manufacturer || ''}</td>
+            <td data-label="모델명">${eq.modelName || ''}</td>
+            <td data-label="프리필터 개수">${eq.precount || ''}</td>
+            <td data-label="프리필터 사이즈">${eq.presize || ''}</td>
+            <td data-label="미디엄필터 개수">${eq.mediumcount || ''}</td>
+            <td data-label="미디엄필터 사이즈">${eq.mediumsize || ''}</td>
+            <td data-label="헤파필터 개수">${eq.hepacount || ''}</td>
+            <td data-label="헤파필터 사이즈">${eq.hepasize || ''}</td>
+            <td data-label="설치 장소">${eq.location || ''}</td>
+            <td data-label="필터교체일">${eq.replaceday || ''}</td>
+            <td data-label="필터청소일">${eq.cleanday || ''}</td>
+            <td data-label="특이사항">${eq.particulas || ''}</td>
         `;
                 eqTableBody.appendChild(eqRow);
             });

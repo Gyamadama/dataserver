@@ -355,13 +355,13 @@
                 const schoolRow = document.createElement('tr');
 
                 schoolRow.innerHTML = `
-                        <td data-label="학교ID">${school.school_id}</td>
-                        <td data-label="학교명">${school.school_name}</td>
-                        <td data-label="학교급">${school.school_grade}</td>
-                        <td data-label="학교설립일">${school.school_create}</td>
-                        <td data-label="구분">${school.school_type}</td>
-                        <td data-label="지번주소">${school.school_address1}</td>
-                        <td data-label="도로명주소">${school.school_address2}</td>
+                        <td data-label="학교ID">${school.school_id || ''}</td>
+                        <td data-label="학교명">${school.school_name || ''}</td>
+                        <td data-label="학교급">${school.school_grade || ''}</td>
+                        <td data-label="학교설립일">${school.school_create || ''}</td>
+                        <td data-label="구분">${school.school_type || ''}</td>
+                        <td data-label="지번주소">${school.school_address1 || ''}</td>
+                        <td data-label="도로명주소">${school.school_address2 || ''}</td>
                         ${
                             userFrom === 'admin'
                             ? `<td data-label="영업일">
@@ -369,9 +369,9 @@
                             </td>`
                             : `<td style="display: none;" data-label="영업일"></td>`
                         }
-                        <td data-label="점검일"> ${school.school_inspection}</td>
-                        <td data-label="학교담당자">${school.school_md}</td>
-                        <td data-label="권장점검일">${school.school_nextinfo}</td>
+                        <td data-label="점검일"> ${school.school_inspection || ''}</td>
+                        <td data-label="학교담당자">${school.school_md || ''}</td>
+                        <td data-label="권장점검일">${school.school_nextinfo || ''}</td>
                         ${
                             userFrom === 'admin'
                             ? `<td data-label="특이사항" contenteditable="true" data-school-id="${school.school_id}" class="change-input" data-column="school_particulas">

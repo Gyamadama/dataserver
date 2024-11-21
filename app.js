@@ -1,17 +1,43 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const mysql = require('mysql2/promise'); // promise 버전으로 설정
 const cors = require('cors');
 const crypto = require('crypto');
 const app = express();
-const PORT = 5000;
 const nodemailer = require('nodemailer');
 const multer = require('multer');
 const session = require('express-session');
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {fileSize:16*1024*1024}, //16MB제한
+});
 const secretKey = crypto.randomBytes(32).toString('hex'); // 32 바이트 길이의 무작위 문자열 생성
-const BASE_URL = process.env.BASE_URL || 'http://218.156.106.25:5000';
-require('dotenv').config();
+const http = require('http');
+const { exec } = require('child_process'); // 서버 재시작 명령 실행
+
+// 서버 인스턴스 생성
+const server = http.createServer(app);
+const BASE_PORT = process.env.BASE_PORT;
+const BASE_URL = process.env.BASE_URL;
+// Winston 로깅 추가
+const winston = require('winston');
+
+// 로거
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    transports: [
+        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'combined.log' })
+    ]
+});
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 동적 import()를 사용하여 mime 모듈을 불러옴
 let mime;
@@ -21,18 +47,18 @@ let mime;
 
 // MySQL 풀 설정
 const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: 'mirae0216!',
-    database: 'Mysql',
-    connectionLimit: 100
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_ID,
+    password: process.env.MYSQL_PWD,
+    database: process.env.MYSQL_DB,
+    connectionLimit: process.env.MYSQL_CONNECTION_LIMIT
 });
 
 const transporter = nodemailer.createTransport({
-    service: 'Naver',
-    host: 'smtp.naver.com',
+    service: process.env.SMTP_SERVICE,
+    host: process.env.SMTP_HOST,
     tls: true,
-    port: 587,
+    port: process.env.SMTP_PORT,
     auth: {
         user: process.env.NAVER_USER,
         pass: process.env.NAVER_PASS
@@ -65,26 +91,18 @@ function sessionCheck(req, res, next) {
 }
 
 app.use((req, res, next) => {
-    const unprotectedRoutes = ['/', '/login', '/signup', '/estimate-request', '/login.html', '/signup.html', '/quotes.html'];
+    const unprotectedRoutes = ['/', '/login', '/signup','/config' ,'/estimate-request', '/login.html', '/signup.html', '/quotes.html'];
     if (unprotectedRoutes.includes(req.path)) {
         return next(); // 세션 체크 제외
     }
     sessionCheck(req, res, next); // 세션 체크
 });
-// CORS 설정 및 JSON 파싱 미들웨어 추가
-// CORS 설정
+
+// CORS 설정 // CORS 설정 및 JSON 파싱 미들웨어 추가
 app.use(cors({
-    origin: 'http://218.156.106.25:5000', // 클라이언트의 출처 (URL)
+    origin: BASE_URL + BASE_PORT, // 클라이언트의 출처 (URL)
     credentials: true // 클라이언트 요청에 인증 정보를 포함할 수 있도록 허용
 }));
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-
-// 루트 경로에 접속했을 때 login.html로 리디렉션
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
 
 // 요청 로그 미들웨어 추가
 app.use((req, res, next) => {
@@ -100,6 +118,15 @@ app.use((req, res, next) => {
 function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('base64');
 }
+
+
+
+
+// 루트 경로에 접속했을 때 login.html로 리디렉션
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
 
 // 회원가입 API
 app.post('/signup', async (req, res) => {
@@ -798,7 +825,65 @@ app.delete('/deleteReport', async (req, res) => {
     }
 });
 
-// 서버 시작
-app.listen(PORT, () => {
-    console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+// Graceful Shutdown 추가(요청중단방지, 데이터유실방지)
+process.on('SIGINT', () => {
+    console.log('서버가 종료 신호(SIGINT)를 수신했습니다.');
+    server.close(() => {
+        console.log('모든 요청 처리가 완료되어 서버가 안전하게 종료됩니다.');
+        process.exit(0);
+    });
+
+    // 일정 시간 후 강제 종료 (예: 10초)
+    setTimeout(() => {
+        console.error('강제 종료 중...');
+        process.exit(1);
+    }, 10000);
 });
+
+process.on('SIGTERM', () => {
+    console.log('서버가 종료 신호(SIGTERM)를 수신했습니다.');
+    server.close(() => {
+        console.log('모든 요청 처리가 완료되어 서버가 안전하게 종료됩니다.');
+        process.exit(0);
+    });
+});
+
+// 서버 실행 함수
+function startServer() {
+    server.listen(BASE_PORT, () => {
+        console.log(`서버가 ${BASE_URL}${BASE_PORT} 에서 실행 중입니다.`);
+    });
+}
+// 서버 재시작 함수
+function restartServer() {
+    console.log('서버를 재시작합니다...');
+    // Node.js 서버를 안전하게 종료 후 재시작
+    server.close(() => {
+        console.log('서버가 종료되었습니다. 재시작 중...');
+        exec('node app.js', (error, stdout, stderr) => {
+            if (error) {
+                console.error('서버 재시작 실패:', error);
+                process.exit(1); // 재시작 실패 시 프로세스 종료
+            } else {
+                console.log('서버가 성공적으로 재시작되었습니다.');
+                console.log(stdout || stderr);
+            }
+        });
+    });
+}
+
+// uncaughtException 처리
+process.on('uncaughtException', (err) => {
+    logger.error(`Uncaught Exception: ${err.stack}`);
+    restartServer(); // 서버 재시작 호출
+});
+
+// unhandledRejection 처리
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error(`Unhandled Rejection at: ${promise} reason: ${reason}`);
+    restartServer(); // 서버 재시작 호출
+});
+
+// 서버 시작
+startServer();
+

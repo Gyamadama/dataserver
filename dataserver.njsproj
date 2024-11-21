@@ -31,6 +31,9 @@
     <Content Include=".env" />
     <Content Include="app.js" />
     <Content Include="package.json" />
+    <Content Include="public\config.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="public\Eq_info.html">
       <SubType>Code</SubType>
     </Content>

@@ -203,19 +203,23 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            const savedUserId = localStorage.getItem('userId');
-            const savedPassword = localStorage.getItem('password');
-            const rememberMe = localStorage.getItem('rememberMe') === 'true';
+            try {
 
-            if (rememberMe && savedUserId && savedPassword) {
-                document.getElementById('userId').value = savedUserId;
-                document.getElementById('password').value = savedPassword;
-                document.getElementById('rememberMe').checked = true;
+                const savedUserId = localStorage.getItem('userId');
+                const savedPassword = localStorage.getItem('password');
+                const rememberMe = localStorage.getItem('rememberMe') === 'true';
+                if (rememberMe && savedUserId && savedPassword) {
+                    document.getElementById('userId').value = savedUserId;
+                    document.getElementById('password').value = savedPassword;
+                    document.getElementById('rememberMe').checked = true;
+                }
+                displayMessageFromQuery();
+            } catch (err) {
+                console.error('환경 설정 정보를 가져오는 중 오류 발생:', err);
             }
-            displayMessageFromQuery();
         });
 
-                // URL 쿼리 파라미터에서 메시지 읽기
+        // URL 쿼리 파라미터에서 메시지 읽기
         function displayMessageFromQuery() {
             const params = new URLSearchParams(window.location.search);
             const message = params.get('message');
@@ -232,7 +236,7 @@
             const password = document.getElementById('password').value;
             const rememberMe = document.getElementById('rememberMe').checked;
 
-            fetch('http://218.156.106.25:5000/login', {
+            fetch(`http://218.156.106.25:5000/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
