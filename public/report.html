@@ -254,6 +254,8 @@
             cursor: pointer;
         }
     </style>
+    <script src="config.js"></script>
+
     <script>
         function loadSidebar() {
             fetch('sidebar.html')
@@ -296,7 +298,7 @@
         }
         const userFrom = localStorage.getItem('userFrom');
         const currentschool = localStorage.getItem('currentschool');
-        
+
 
         // 페이지네이션 및 데이터 표시 함수
         let currentPage = 1;
@@ -315,22 +317,22 @@
 
                 // 각 컬럼에 데이터와 data-label 속성 추가
                 row.innerHTML = `
-                        <td data-label="순번">${report.report_no}</td>
-                        <td data-label="파일명">${report.report_filename}</td>
-                        <td data-label="게시일">${report.report_date}</td>
-                        <td data-label="파일크기">${report.report_size}</td>
-                        <td data-label="자료">
-                            <button class="download-btn ${report.hasReport ? "active" : "inactive"}"
-                                    ${report.report_down ? `onclick="downloadReport('${report.report_no}')"` : "disabled"}>
-                                다운로드
-                            </button>
-                        </td>
-                        <td data-label="삭제">
-                            <button class="delete-row-btn" onclick="deleteReport('${report.report_no}')">
-                                X
-                            </button>
-                        </td>
-                    `;
+                            <td data-label="순번">${report.report_no}</td>
+                            <td data-label="파일명">${report.report_filename}</td>
+                            <td data-label="게시일">${report.report_date}</td>
+                            <td data-label="파일크기">${report.report_size}</td>
+                            <td data-label="자료">
+                                <button class="download-btn ${report.hasReport ? "active" : "inactive"}"
+                                        ${report.report_down ? `onclick="downloadReport('${report.report_no}')"` : "disabled"}>
+                                    다운로드
+                                </button>
+                            </td>
+                            <td data-label="삭제">
+                                <button class="delete-row-btn" onclick="deleteReport('${report.report_no}')">
+                                    X
+                                </button>
+                            </td>
+                        `;
                 tbody.appendChild(row);
             });
         }
@@ -377,7 +379,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
+            fetchWithSessionCheck(`${SERVER_IP}/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('보고서 데이터를 로드하는 중 서버 오류 발생');
@@ -403,10 +405,10 @@
         // 보고서 다운로드 함수
         function downloadReport(no) {
             const userFrom = localStorage.getItem('userFrom');
-            fetchWithSessionCheck(`http://218.156.106.25:5000/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('보고서 데이터를 가져오는 중 오류 발생');
+            fetchWithSessionCheck(`${SERVER_IP}/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('보고서 데이터를 가져오는 중 오류 발생');
 
                     }
 
@@ -445,7 +447,7 @@
 
             const userFrom = localStorage.getItem('userFrom');
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/deleteReport?report_no=${reportNo}&school_id=${currentschool}`, {
+            fetchWithSessionCheck(`${SERVER_IP}/deleteReport?report_no=${reportNo}&school_id=${currentschool}`, {
                 method: 'DELETE',
             })
                 .then(response => {
@@ -512,7 +514,7 @@
                 formData.append('date', new Date().toISOString());
                 formData.append('size', (file.size / 1024).toFixed(2) + ' KB');
 
-                fetchWithSessionCheck(`http://218.156.106.25:5000/uploadReport?currentschool=${currentschool}`, {
+                fetchWithSessionCheck(`${SERVER_IP}/uploadReport?currentschool=${currentschool}`, {
                     method: 'POST',
                     body: formData,
                 })

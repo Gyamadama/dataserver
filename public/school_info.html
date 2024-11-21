@@ -130,24 +130,25 @@
             cursor: pointer;
             margin-left: 10px;
         }
-            .search-container input {
-                padding: 8px;
-                font-size: 14px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                width: 150px;
-                margin-right: 10px;
-            }
 
-            .search-container button {
-                padding: 8px 12px;
-                font-size: 14px;
-                background-color: #007bff;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-            }
+        .search-container input {
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 150px;
+            margin-right: 10px;
+        }
+
+        .search-container button {
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
 
         /* 테이블 스타일 */
         table {
@@ -281,14 +282,17 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-        .hidden{
-            display : none;
+
+        .hidden {
+            display: none;
         }
+
         .title-group {
             display: flex;
             flex-direction: column;
             align-items: flex-start; /* 왼쪽 정렬 */
         }
+
         #school-count {
             font-size: 1em;
             color: #333;
@@ -296,6 +300,8 @@
             text-align: left; /* 왼쪽 정렬 */
         }
     </style>
+    <script src="config.js"></script>
+
     <script>
         let currentPage = 1;
         const rowsPerPage = 10;
@@ -355,32 +361,30 @@
                 const schoolRow = document.createElement('tr');
 
                 schoolRow.innerHTML = `
-                        <td data-label="학교ID">${school.school_id || ''}</td>
-                        <td data-label="학교명">${school.school_name || ''}</td>
-                        <td data-label="학교급">${school.school_grade || ''}</td>
-                        <td data-label="학교설립일">${school.school_create || ''}</td>
-                        <td data-label="구분">${school.school_type || ''}</td>
-                        <td data-label="지번주소">${school.school_address1 || ''}</td>
-                        <td data-label="도로명주소">${school.school_address2 || ''}</td>
-                        ${
-                            userFrom === 'admin'
-                            ? `<td data-label="영업일">
-                            <input type="date" value="${school.school_info}" data-school-id="${school.school_id}" class="change-input" data-column="school_info" />
-                            </td>`
-                            : `<td style="display: none;" data-label="영업일"></td>`
-                        }
-                        <td data-label="점검일"> ${school.school_inspection || ''}</td>
-                        <td data-label="학교담당자">${school.school_md || ''}</td>
-                        <td data-label="권장점검일">${school.school_nextinfo || ''}</td>
-                        ${
-                            userFrom === 'admin'
-                            ? `<td data-label="특이사항" contenteditable="true" data-school-id="${school.school_id}" class="change-input" data-column="school_particulas">
-                            ${school.school_particulas || ''}
-                            </td>`
-                            : `<td style="display: none;" data-label="특이사항"></td>`
-                        }
-                        <td data-label="선택"><button class="select-button" onclick="selectSchool('${school.school_id}')">O</button></td>
-                    `;
+                            <td data-label="학교ID">${school.school_id || ''}</td>
+                            <td data-label="학교명">${school.school_name || ''}</td>
+                            <td data-label="학교급">${school.school_grade || ''}</td>
+                            <td data-label="학교설립일">${school.school_create || ''}</td>
+                            <td data-label="구분">${school.school_type || ''}</td>
+                            <td data-label="지번주소">${school.school_address1 || ''}</td>
+                            <td data-label="도로명주소">${school.school_address2 || ''}</td>
+                            ${userFrom === 'admin'
+                        ? `<td data-label="영업일">
+                                <input type="date" value="${school.school_info}" data-school-id="${school.school_id}" class="change-input" data-column="school_info" />
+                                </td>`
+                        : `<td style="display: none;" data-label="영업일"></td>`
+                    }
+                            <td data-label="점검일"> ${school.school_inspection || ''}</td>
+                            <td data-label="학교담당자">${school.school_md || ''}</td>
+                            <td data-label="권장점검일">${school.school_nextinfo || ''}</td>
+                            ${userFrom === 'admin'
+                        ? `<td data-label="특이사항" contenteditable="true" data-school-id="${school.school_id}" class="change-input" data-column="school_particulas">
+                                ${school.school_particulas || ''}
+                                </td>`
+                        : `<td style="display: none;" data-label="특이사항"></td>`
+                    }
+                            <td data-label="선택"><button class="select-button" onclick="selectSchool('${school.school_id}')">O</button></td>
+                        `;
                 schoolTableBody.appendChild(schoolRow);
             });
 
@@ -425,7 +429,7 @@
         function selectSchool(schoolId) {
             localStorage.setItem('currentschool', schoolId);
             alert(`학교 ID ${schoolId}가 선택되었습니다.`);
-            window.location.href = 'http://218.156.106.25:5000/measure_input.html';
+            window.location.href = `${SERVER_IP}/measure_input.html`;
         }
 
         function renderPagination(data) {
@@ -493,7 +497,7 @@
                 return;
             }
 
-            fetchWithSessionCheck('http://218.156.106.25:5000/updateSchools', {
+            fetchWithSessionCheck(`${SERVER_IP}/updateSchools`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(modifiedRows)
@@ -516,7 +520,7 @@
                 alert('로그인 정보가 없습니다.');
                 return;
             }
-            fetchWithSessionCheck(`http://218.156.106.25:5000/schoolinfo?from=${userFrom}`)
+            fetchWithSessionCheck(`${SERVER_IP}/schoolinfo?from=${userFrom}`)
                 .then(data => {
                     if (data) {
                         fullData = data;
@@ -531,7 +535,7 @@
 
         function searchTable() {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            fetchWithSessionCheck(`http://218.156.106.25:5000/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
+            fetchWithSessionCheck(`${SERVER_IP}/schoolselectinfo?search=${encodeURIComponent(searchTerm)}`)
                 .then(filteredData => {
                     if (filteredData) {
                         currentPage = 1;
@@ -539,13 +543,13 @@
                         document.getElementById('school-count').textContent = `학교개수: ${schoolCount}개`;
                         displayRows(filteredData);
                     }
-            })
+                })
                 .catch(error => console.error('데이터를 가져오는 중 오류가 발생했습니다:', error));
         }
 
         async function fetchWithSessionCheck(url, options = {}) {
             const response = await fetch(url, { ...options, credentials: 'include' });
-            
+
             if (response.status === 401) {
                 alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
                 window.location.href = 'login.html';
@@ -555,7 +559,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            
+
             loadSidebar();
             loadSchoolInfo();
             document.getElementById('save-button').addEventListener('click', saveChanges); // 저장 버튼 클릭 시 함수 연결

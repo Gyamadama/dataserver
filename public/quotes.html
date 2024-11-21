@@ -171,6 +171,8 @@
             font-size: 1em;
         }
     </style>
+    <script src="config.js"></script>
+
 </head>
 <body>
     <div class="form-container">
@@ -307,7 +309,7 @@
             event.preventDefault();
             const formData = new FormData(event.target);
 
-            fetch('http://218.156.106.25:5000/estimate-request', {
+            fetch(`${SERVER_IP}/estimate-request`, {
                 method: 'POST',
                 body: formData
             })

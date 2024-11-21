@@ -233,6 +233,7 @@
                 border-radius: 4px;
                 cursor: pointer;
             }
+
         .title-group {
             display: flex;
             flex-direction: column;
@@ -246,6 +247,8 @@
             margin-bottom: 10px;
         }
     </style>
+    <script src="config.js"></script>
+
     <script>
         function loadSidebar() {
             fetch('sidebar.html')
@@ -293,7 +296,7 @@
             const columns = [
                 "장비번호", "장치 유형", "제조업체", "모델명", "프리필터 개수",
                 "프리필터 사이즈", "미디엄필터 개수", "미디엄필터 사이즈",
-                "헤파 필터 개수", "헤파 필터 사이즈", "설치 장소","필터교체일","필터청소일","특이사항"
+                "헤파 필터 개수", "헤파 필터 사이즈", "설치 장소", "필터교체일", "필터청소일", "특이사항"
             ];
 
             columns.forEach(columnName => {
@@ -335,7 +338,7 @@
             deleteButton.onclick = () => {
                 newRow.remove();
                 updateEquipmentCount(); // 행 삭제 시 장비대수 업데이트
-            }; 
+            };
             deleteCell.appendChild(deleteButton);
             newRow.appendChild(deleteCell);
 
@@ -381,7 +384,7 @@
                 };
             });
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
+            fetchWithSessionCheck(`${SERVER_IP}/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSave)
@@ -409,7 +412,7 @@
             }
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
+            fetchWithSessionCheck(`${SERVER_IP}/eqselectinfo?search=${encodeURIComponent(searchTerm)}&from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     clearTable();
@@ -455,7 +458,7 @@
                 return;
             }
 
-            fetchWithSessionCheck(`http://218.156.106.25:5000/equipmentinfo?from=${currentSchool}`)
+            fetchWithSessionCheck(`${SERVER_IP}/equipmentinfo?from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(item => {

@@ -139,7 +139,7 @@
             color: #7f8c8d;
             line-height: 1.6;
             margin-top: 0;
-            text-align : center;
+            text-align: center;
         }
 
         /* 강조 텍스트 스타일 */
@@ -151,6 +151,8 @@
     <script>
         document.addEventListener('contextmenu', event => event.preventDefault());
     </script>
+    <script src="config.js"></script>
+
 </head>
 <body>
     <!-- 상단 로고 이미지 추가 -->
@@ -236,7 +238,7 @@
             const password = document.getElementById('password').value;
             const rememberMe = document.getElementById('rememberMe').checked;
 
-            fetch(`http://218.156.106.25:5000/login`, {
+            fetch(`${SERVER_IP}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

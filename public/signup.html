@@ -122,6 +122,8 @@
         // 우클릭 방지 기능
         document.addEventListener('contextmenu', event => event.preventDefault());
     </script>
+    <script src="config.js"></script>
+
 </head>
 <body>
     <div class="signup-box">
@@ -273,7 +275,7 @@
                 return;
             }
 
-            fetchWithSessionCheck('http://218.156.106.25:5000/signup', {
+            fetchWithSessionCheck(`${SERVER_IP}/signup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
