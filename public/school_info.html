@@ -380,10 +380,14 @@
                             ${userFrom === 'admin'
                         ? `<td data-label="특이사항" contenteditable="true" data-school-id="${school.school_id}" class="change-input" data-column="school_particulas">
                                 ${school.school_particulas || ''}
-                                </td>`
+                            </td>`
                         : `<td style="display: none;" data-label="특이사항"></td>`
                     }
-                            <td data-label="선택"><button class="select-button" onclick="selectSchool('${school.school_id}')">O</button></td>
+                            ${userFrom === 'admin'
+                        ? `<td data-label="선택" > <button class="select-button" onclick="selectSchool('${school.school_id}')">O</button>
+                            </td >`
+                        : `<td style="display: none;" data-label="선택"></td>`
+                    }
                         `;
                 schoolTableBody.appendChild(schoolRow);
             });
@@ -549,14 +553,32 @@
         }
 
         async function fetchWithSessionCheck(url, options = {}) {
-            const response = await fetch(url, { ...options, credentials: 'include' });
+            try {
+                const response = await fetch(url, { ...options, credentials: 'include' });
+                if (!response.ok) {
+                    switch (response.status) {
+                        case 401:
+                            alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
+                            window.location.href = 'login.html';
+                            throw new Error('세션 만료'); // 명확하게 에러를 던져 
+                            break;
+                        case 500:
+                            alert('서버 오류: 관리자에게 문의하세요');
+                            // 사용자에게 오류 메시지 표시 등의 처리
+                            break;
+                        default:
+                            alert(`오류 발생: ${response.status}`);
+                            // 기타 오류 처리
+                            break;
+                    }
+                }
 
-            if (response.status === 401) {
-                alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
-                window.location.href = 'login.html';
-                throw new Error('세션 만료'); // 명확하게 에러를 던져 처리
+                return await response.json(); // JSON 데이터 반환
+            } catch (err) {
+                console.error('네트워크 오류:', err);
+                // 네트워크 오류 처리
+                return null;
             }
-            return await response.json(); // JSON 데이터 반환
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -567,12 +589,14 @@
 
             const searchContainer = document.getElementById('search-container');
             const saveButton = document.getElementById('save-button');
+            console.log("userFrom 값:", userFrom); // userFrom 값 디버깅
 
             if (userFrom != 'admin') {
                 searchContainer.classList.add('hidden');
                 saveButton.classList.add('hidden');
                 document.getElementById('info-header').style.display = 'none';
                 document.getElementById('particulas-header').style.display = 'none';
+                document.getElementById('select-header').style.display = 'none';
 
             } else {
                 searchContainer.classList.remove('hidden');
@@ -585,14 +609,14 @@
             e.preventDefault();
         });
 
-        //document.addEventListener('keydown', function (e) {
-        //    if (
-        //        e.key === 'F12' ||
-        //        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
-        //    ) {
-        //        e.preventDefault();
-        //    }
-        //});
+        document.addEventListener('keydown', function (e) {
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
+            ) {
+                e.preventDefault();
+            }
+        });
     </script>
 </head>
 <body>
@@ -630,7 +654,7 @@
                     <th>학교담당자</th>
                     <th>권장점검일</th>
                     <th id="particulas-header">특이사항</th>
-                    <th>선택</th>
+                    <th id="select-header">선택</th>
                 </tr>
             </thead>
             <tbody id="school-table-body">

@@ -131,89 +131,70 @@ app.get('/', (req, res) => {
 // 회원가입 API
 app.post('/signup', async (req, res) => {
     const { userId, password, name, phone, school, position, officePhone, email } = req.body;
-
     try {
         const hashedPassword = hashPassword(password);
         const query = 'INSERT INTO sys.account (ID, PWD, NAME, PHONE, SCHOOL, POSITION, TEL, EMAIL) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         await pool.query(query, [userId, hashedPassword, name, phone, school, position, officePhone, email]);
-        res.json({ success: true, message: '회원가입이 완료되었습니다.' });
+        res.status(201).json({ success: true, message: '회원가입이 완료되었습니다.' });
     } catch (error) {
-        console.error('회원가입 중 오류 발생:', error);
-        res.status(500).json({ success: false, message: '회원가입 중 오류가 발생했습니다.' });
+        handleError(res, error);
     }
 });
 
 // 로그인 API
 app.post('/login', async (req, res) => {
     const { userId, password } = req.body;
-    const query = 'SELECT * FROM sys.account WHERE ID = ?';
-
     try {
+        const query = 'SELECT * FROM sys.account WHERE ID = ?';
         const [results] = await pool.query(query, [userId]);
-
         if (results.length === 0) {
-            res.json({ success: false, message: '아이디 또는 비밀번호가 잘못되었습니다.' });
+            res.status(401).json({ success: false, message: '아이디 또는 비밀번호가 잘못되었습니다.' });
             return;
         }
-
         const user = results[0];
         const hashedInputPassword = hashPassword(password);
-
         if (hashedInputPassword === user.PWD) {
             req.session.userId = userId;
             req.session.userFrom = user.FROM;
-            res.json({ success: true, message: '로그인 성공', from: user.FROM });
+            res.status(200).json({ success: true, message: '로그인 성공', from: user.FROM });
         } else {
-            res.json({ success: false, message: '아이디 또는 비밀번호가 잘못되었습니다.' });
+            res.status(401).json({ success: false, message: '아이디 또는 비밀번호가 잘못되었습니다.' });
         }
     } catch (error) {
-        console.error('로그인 중 오류 발생:', error);
-        res.status(500).json({ success: false, message: '로그인 중 오류가 발생했습니다.' });
+        handleError(res, error);
     }
 });
 
 // 로그아웃 API
 app.post('/logout', (req, res) => {
-    if (req.session) {
-        req.session.destroy(err => {
-            if (err) {
-                res.status(500).json({ success: false, message: '로그아웃 중 오류가 발생했습니다.' });
-            } else {
-                res.json({ success: true, message: '로그아웃 성공' });
-            }
-        });
-    } else {
-        res.json({ success: true, message: '로그아웃 성공' });
+    try {
+        if (req.session) {
+            req.session.destroy(err => {
+                if (err) {
+                    res.status(500).json({ success: false, message: '로그아웃 중 오류가 발생했습니다.' });
+                } else {
+                    res.status(200).json({ success: true, message: '로그아웃 성공' });
+                }
+            });
+        } else {
+            res.status(200).json({ success: true, message: '로그아웃 성공' });
+        }
+    } catch (error) {
+        handleError(res, error);
     }
 });
 
 // 학교 정보 조회 API
 app.get('/schoolinfo', async (req, res) => {
     const userFrom = req.query.from;
-    let query = null;
-   
-    if (userFrom == 'admin') {
-        query = `
-        SELECT school_id, school_name, school_grade, school_create, school_type,
-               school_address1, school_address2, school_info, school_inspection, school_md, school_nextinfo, school_particulas
-        FROM sys.school
-        `;
-    } else {
-        query = `
-        SELECT school_id, school_name, school_grade, school_create, school_type,
-               school_address1, school_address2, school_info, school_inspection,school_md, school_nextinfo, school_particulas
-        FROM sys.school
-        WHERE school_id = ?
-        `;
-    }
-    
-
     try {
+        const query = userFrom === 'admin'
+            ? `SELECT * FROM sys.school`
+            : `SELECT * FROM sys.school WHERE school_id = ?`;
         const [results] = await pool.query(query, [userFrom]);
-        res.json(results);
+        res.status(200).json(results);
     } catch (error) {
-        console.error('학교 정보를 가져오는 중 오류 발생:', error);
-        res.status(500).json({ error: '데이터를 가져오는 중 오류가 발생했습니다.' });
+        handleError(res, error);
     }
 });
 
@@ -221,248 +202,163 @@ app.get('/schoolinfo', async (req, res) => {
 app.get('/eqselectinfo', async (req, res) => {
     const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
     const from = req.query.from;
-    const query = `
-        SELECT * FROM sys.school_info
-        WHERE school_id LIKE ?
-           AND (
-               eq_no LIKE ?
-               OR deviceType LIKE ?
-               OR manufacturer LIKE ?
-               OR modelName LIKE ?
-               OR precount LIKE ?
-               OR presize LIKE ?
-               OR mediumcount LIKE ?
-               OR mediumsize LIKE ?
-               OR hepacount LIKE ?
-               OR hepasize LIKE ?
-               OR location LIKE ?
-               OR replaceday LIKE ?
-               OR cleanday LIKE ?
-               OR particulas LIKE ?
-           )
-    `;
-
     try {
-        const [results] = await pool.query(query, [from, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
-        res.json(results);
+        const query = `
+            SELECT * FROM sys.school_info
+            WHERE school_id LIKE ?
+              AND (
+                   eq_no LIKE ?
+                   OR deviceType LIKE ?
+                   OR manufacturer LIKE ?
+                   OR modelName LIKE ?
+                   OR precount LIKE ?
+                   OR presize LIKE ?
+                   OR mediumcount LIKE ?
+                   OR mediumsize LIKE ?
+                   OR hepacount LIKE ?
+                   OR hepasize LIKE ?
+                   OR location LIKE ?
+                   OR replaceday LIKE ?
+                   OR cleanday LIKE ?
+                   OR particulas LIKE ?
+               )
+        `;
+        const [results] = await pool.query(query, [
+            from, searchTerm, searchTerm, searchTerm, searchTerm,
+            searchTerm, searchTerm, searchTerm, searchTerm, searchTerm,
+            searchTerm, searchTerm, searchTerm, searchTerm, searchTerm
+        ]);
+        res.status(200).json(results);
     } catch (error) {
-        console.error('데이터 조회 중 오류 발생:', error);
-        res.status(500).json({ success: false, message: '데이터 조회 중 오류가 발생했습니다.' });
+        handleError(res, error); // 공통 에러 처리 함수 사용
     }
 });
-// schoolselectinfo API
-app.get('/schoolselectinfo', async (req, res) => {
-    
-    const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
-    const query = `
-        SELECT * FROM sys.school
-        WHERE school_id LIKE ? 
-           OR school_name LIKE ? 
-           OR school_grade LIKE ?
-           OR school_create LIKE ?
-           OR school_type LIKE ?
-           OR school_address1 LIKE ?
-           OR school_address2 LIKE ?
-           OR school_info LIKE ?
-           OR school_inspection LIKE ?
-           OR school_md LIKE ?
-           OR school_nextinfo LIKE ?
-           OR school_particulas LIKE ?
-    `;
 
+// 학교정보선택조회 API
+app.get('/schoolselectinfo', async (req, res) => {
+    const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
     try {
-        const [results] = await pool.query(query, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
-        res.json(results);
+        const query = `
+            SELECT * FROM sys.school
+            WHERE school_id LIKE ? 
+               OR school_name LIKE ? 
+               OR school_grade LIKE ?
+               OR school_create LIKE ?
+               OR school_type LIKE ?
+               OR school_address1 LIKE ?
+               OR school_address2 LIKE ?
+               OR school_info LIKE ?
+               OR school_inspection LIKE ?
+               OR school_md LIKE ?
+               OR school_nextinfo LIKE ?
+               OR school_particulas LIKE ?
+        `;
+        const [results] = await pool.query(query, Array(12).fill(searchTerm));
+        res.status(200).json(results);
     } catch (error) {
-        console.error('데이터 조회 중 오류 발생:', error);
-        res.status(500).json({ success: false, message: '데이터 조회 중 오류가 발생했습니다.' });
+        handleError(res, error); // 공통 에러 처리 함수 사용
     }
 });
 
 // 장비 정보 조회 API
 app.get('/equipmentinfo', async (req, res) => {
-    
-    const userFrom = req.query.from;
-    const currentschool = req.query.currentschool;
-    const query = `
-    SELECT eq_no, deviceType, manufacturer, modelName, precount, presize,
-            mediumcount, mediumsize, hepacount, hepasize, location,replaceday,cleanday, particulas
-    FROM sys.school_info
-    WHERE school_id = ?
-    `;
-
-    if (userFrom == 'admin') {
-        try {
-            const [results] = await pool.query(query, [currentschool]);
-            res.json(results);
-        } catch (error) {
-            console.error('장비 정보를 가져오는 중 오류 발생:', error);
-            res.status(500).json({ error: '장비 정보를 가져오는 중 오류가 발생했습니다.' });
-        }
-    } else {
-        try {
-            const [results] = await pool.query(query, [userFrom]);
-            res.json(results);
-        } catch (error) {
-            console.error('장비 정보를 가져오는 중 오류 발생:', error);
-            res.status(500).json({ error: '장비 정보를 가져오는 중 오류가 발생했습니다.' });
-        }
+    const { from, currentschool } = req.query;
+    try {
+        const query = `SELECT * FROM sys.school_info WHERE school_id = ?`;
+        const [results] = await pool.query(query, [from === 'admin' ? currentschool : from]);
+        res.status(200).json(results);
+    } catch (error) {
+        handleError(res, error);
     }
 });
 
 // 보고서 데이터 조회 API
 app.get('/reportdata', async (req, res) => {
-    
-    const schoolId = req.query.school_id;
-    const currentschool = req.query.currentschool;
-    const query = `
-        SELECT report_no, report_down, report_date, report_filename, report_size
-        FROM sys.report 
-        WHERE school_id = ?
-        `;
-    if (schoolId == 'admin') {
-        try {
-            const [results] = await pool.query(query, [currentschool]);
-
-            const reports = results.map(report => ({
-                report_no: report.report_no,
-                report_down: report.report_down,
-                report_filename: report.report_filename,
-                report_date: report.report_date,
-                report_size: report.report_size,
-                hasReport: report.report_down !== null
-            }));
-
-            res.json({ success: true, data: reports });
-        } catch (error) {
-            console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
-            res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
-        }
-    } else {
-        try {
-            const [results] = await pool.query(query, [schoolId]);
-
-            const reports = results.map(report => ({
-                report_no: report.report_no,
-                report_down: report.report_down,
-                report_filename: report.report_filename,
-                report_date: report.report_date,
-                report_size: report.report_size,
-                hasReport: report.report_down !== null
-            }));
-
-            res.json({ success: true, data: reports });
-        } catch (error) {
-            console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
-            res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
-        }
+    const { school_id, currentschool } = req.query;
+    try {
+        const query = `SELECT * FROM sys.report WHERE school_id = ?`;
+        const [results] = await pool.query(query, [school_id === 'admin' ? currentschool : school_id]);
+        res.status(200).json({ success: true, data: results });
+    } catch (error) {
+        handleError(res, error);
     }
 });
 
 // 보고서 데이터 다운로드 API (모든 파일 확장자에 대응)
 app.get('/reportdown', async (req, res) => {
-    
-    const schoolId = req.query.school_id;
-    const no = req.query.no;
-    const currentschool = req.query.currentschool;
+    const { school_id, no } = req.query;
+    try {
+        const query = `
+            SELECT report_date, report_filename, report_down
+            FROM sys.report 
+            WHERE school_id = ? AND report_no = ?
+        `;
+        const [results] = await pool.query(query, [school_id === 'admin' ? req.query.currentschool : school_id, no]);
 
-    const query = `
-        SELECT report_date, report_filename, report_down
-        FROM sys.report 
-        WHERE school_id = ? AND report_no = ?
-    `;
-    if (schoolId == 'admin') {
-        try {
-            const [results] = await pool.query(query, [currentschool, no]);
-
-            if (results.length > 0 && results[0].report_down) {
-                const report = results[0];
-                const filename = report.report_filename || `report_${no}`;
-                const extension = path.extname(filename) || '.pdf';
-                const mimeType = mime.default.getType(extension) || 'application/octet-stream';
-
-                const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
-                res.setHeader('Content-Type', mimeType);
-                res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
-
-                res.send(report.report_down);
-            } else {
-                res.status(404).json({ error: '보고서 데이터가 존재하지 않습니다.' });
-            }
-        } catch (error) {
-            console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
-            res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
+        if (results.length === 0 || !results[0].report_down) {
+            return res.status(404).json({ success: false, message: '보고서 데이터가 존재하지 않습니다.' });
         }
-    } else {
-        try {
-            const [results] = await pool.query(query, [schoolId, no]);
 
-            if (results.length > 0 && results[0].report_down) {
-                const report = results[0];
-                const filename = report.report_filename || `report_${no}`;
-                const extension = path.extname(filename) || '.pdf';
-                const mimeType = mime.default.getType(extension) || 'application/octet-stream';
+        const report = results[0];
+        const filename = report.report_filename || `report_${no}`;
+        const extension = path.extname(filename) || '.pdf';
+        const mimeType = mime.default.getType(extension) || 'application/octet-stream';
+        const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
 
-                const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
-                res.setHeader('Content-Type', mimeType);
-                res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
-
-                res.send(report.report_down);
-            } else {
-                res.status(404).json({ error: '보고서 데이터가 존재하지 않습니다.' });
-            }
-        } catch (error) {
-            console.error('보고서 데이터를 가져오는 중 오류 발생:', error);
-            res.status(500).json({ error: '보고서 데이터를 가져오는 중 오류가 발생했습니다.' });
-        }
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+        res.status(200).send(report.report_down);
+    } catch (error) {
+        handleError(res, error); // 공통 에러 처리 함수 사용
     }
 });
 
 // 견적 요청 API
 app.post('/estimate-request', upload.any(), async (req, res) => {
     try {
-
-        console.log("Received files:", req.files); // 요청된 파일 로그 확인
-
+        // 입력 데이터 가져오기
         const {
             schoolName,
             contactPerson,
             email,
             annualVisit,
             annualFilterChange,
-            details
+            details,
+            equipment,
+            manufacturer,
+            model,
+            quantity
         } = req.body;
 
-        // 각 변수가 배열인지 확인하고, 그렇지 않다면 배열로 변환
-        const equipmentArray = Array.isArray(req.body.equipment) ? req.body.equipment : [req.body.equipment];
-        const manufacturersArray = Array.isArray(req.body.manufacturer) ? req.body.manufacturer : [req.body.manufacturer];
-        const modelsArray = Array.isArray(req.body.model) ? req.body.model : [req.body.model];
-        const quantitiesArray = Array.isArray(req.body.quantity) ? req.body.quantity : [req.body.quantity];
-        let equipmentDetails = '';
+        // 데이터 유효성 검증
+        if (!schoolName || !contactPerson || !email || !equipment) {
+            return res.status(400).json({ success: false, message: '필수 입력 데이터가 누락되었습니다.' });
+        }
 
-        // 정보를 HTML 표 형식으로 조합
+        // 장비 정보 처리
+        const equipmentArray = Array.isArray(equipment) ? equipment : [equipment];
+        const manufacturersArray = Array.isArray(manufacturer) ? manufacturer : [manufacturer];
+        const modelsArray = Array.isArray(model) ? model : [model];
+        const quantitiesArray = Array.isArray(quantity) ? quantity : [quantity];
+
+        let equipmentDetails = '';
         equipmentArray.forEach((item, index) => {
             const manufacturer = manufacturersArray[index] || '정보 없음';
             const model = modelsArray[index] || '정보 없음';
             const quantity = quantitiesArray[index] || '정보 없음';
 
             equipmentDetails += `
-        <tr>
-            <td>${index + 1}</td>
-            <td>${item}</td>
-            <td>${manufacturer}</td>
-            <td>${model}</td>
-            <td>${quantity}</td>
-        </tr>
-    `;
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item}</td>
+                    <td>${manufacturer}</td>
+                    <td>${model}</td>
+                    <td>${quantity}</td>
+                </tr>
+            `;
         });
 
-        // 데이터가 비어있는 경우에 대한 처리
-        if (equipmentDetails === '') {
-            equipmentDetails = '<tr><td colspan="5">보유 기기 정보가 유효하지 않습니다.</td></tr>';
-        }
-
-        // HTML 형식의 이메일 본문 내용 생성
+        // 이메일 본문 HTML 생성
         const mailText = `
             <p><strong>기관명:</strong> ${schoolName}</p>
             <p><strong>연락처:</strong> ${contactPerson}</p>
@@ -487,34 +383,29 @@ app.post('/estimate-request', upload.any(), async (req, res) => {
             </table>
         `;
 
-        // 이메일 옵션 (HTML 본문 사용)
+        // 이메일 옵션 설정
         const mailOptions = {
-            from: 'seven5629@naver.com',
-            to: 'miraesafeti@naver.com',
-            subject: `[MOKKOJI] "${schoolName}"에서 공기순환기 통합솔루션을 통한 새 견적 요청이 접수되었습니다.`,
-            html: mailText,  // HTML 형식의 이메일 본문 설정
-            attachments: req.files.filter(file=>file.fieldname=='files').map(file => ({
-                filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),  // 파일명을 UTF-8로 변환
+            from: process.env.NAVER_USER,
+            to: process.env.ESTIMATE_RECIPIENT, // 이메일 수신자
+            subject: `[MOKKOJI] ${schoolName} 견적 요청`,
+            html: mailText,
+            attachments: req.files.map(file => ({
+                filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
                 content: file.buffer,
                 contentType: file.mimetype
             }))
         };
 
-        // 이메일 전송
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('이메일 전송 중 오류 발생:', error);
-                return res.status(500).json({ success: false, message: '이메일 전송 중 오류가 발생했습니다.' });
-            } else {
-                console.log('이메일 전송 성공:', info.response);
-                res.json({ success: true, message: '견적 요청이 성공적으로 저장되었습니다.' });
-            }
-        });
+        // 이메일 발송
+        await transporter.sendMail(mailOptions);
+
+        // 성공 응답
+        res.status(200).json({ success: true, message: '견적 요청이 성공적으로 접수되었습니다.' });
     } catch (error) {
-        console.error('견적 요청 처리 중 오류 발생:', error);
-        res.status(500).json({ success: false, message: '견적 요청 처리 중 오류가 발생했습니다.' });
+        handleError(res, error); // 공통 에러 처리 함수 사용
     }
 });
+
 
 // /saveEquipmentInfo API
 app.post('/saveEquipmentInfo', async (req, res) => {
@@ -792,36 +683,16 @@ app.post('/uploadReport', upload.any(), async (req, res) => {
 // 보고서 삭제 API
 app.delete('/deleteReport', async (req, res) => {
     const { report_no, school_id } = req.query;
-
-    if (!report_no || !school_id) {
-        return res.status(400).json({
-            success: false,
-            message: 'report_no와 school_id가 필요합니다.',
-        });
-    }
-
-    const query = `DELETE FROM sys.report WHERE report_no = ? AND school_id = ?`;
-
     try {
+        const query = `DELETE FROM sys.report WHERE report_no = ? AND school_id = ?`;
         const [result] = await pool.query(query, [report_no, school_id]);
-
         if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: '삭제할 보고서를 찾을 수 없습니다.',
-            });
+            res.status(404).json({ success: false, message: '삭제할 보고서를 찾을 수 없습니다.' });
+        } else {
+            res.status(200).json({ success: true, message: '보고서가 성공적으로 삭제되었습니다.' });
         }
-
-        res.json({
-            success: true,
-            message: '보고서가 성공적으로 삭제되었습니다.',
-        });
     } catch (error) {
-        console.error('보고서 삭제 중 오류 발생:', error);
-        res.status(500).json({
-            success: false,
-            message: '보고서를 삭제하는 중 오류가 발생했습니다.',
-        });
+        handleError(res, error);
     }
 });
 
@@ -870,6 +741,18 @@ function restartServer() {
             }
         });
     });
+}
+
+// 공통 에러 처리 함수
+function handleError(res, error) {
+    console.error('API 처리 중 오류 발생:', error);
+    if (error.code) {
+        // 데이터베이스 또는 기타 커스텀 에러 코드가 있을 경우
+        res.status(500).json({ success: false, code: error.code, message: error.message });
+    } else {
+        // 일반적인 서버 오류 처리
+        res.status(500).json({ success: false, message: '서버 오류가 발생했습니다.' });
+    }
 }
 
 // uncaughtException 처리

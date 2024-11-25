@@ -265,7 +265,6 @@
 
                     // 사이드바 HTML 로드 후 추가 작업 실행
                     const userFrom = localStorage.getItem('userFrom');
-                    console.log("userFrom 값:", userFrom); // 디버깅용
 
                     // userFrom이 'admin'인 경우 "실측정보입력" 메뉴 추가
                     if (userFrom === 'admin') {
@@ -322,16 +321,19 @@
                             <td data-label="게시일">${report.report_date}</td>
                             <td data-label="파일크기">${report.report_size}</td>
                             <td data-label="자료">
-                                <button class="download-btn ${report.hasReport ? "active" : "inactive"}"
+                                <button class="download-btn active"
                                         ${report.report_down ? `onclick="downloadReport('${report.report_no}')"` : "disabled"}>
                                     다운로드
                                 </button>
                             </td>
-                            <td data-label="삭제">
+                            ${userFrom==='admin'
+                            ?`<td data-label="삭제">
                                 <button class="delete-row-btn" onclick="deleteReport('${report.report_no}')">
                                     X
                                 </button>
-                            </td>
+                            </td>`
+                            : `<td style="display: none;" data-label="삭제"></td>`
+                            }
                         `;
                 tbody.appendChild(row);
             });
@@ -477,12 +479,12 @@
             // userFrom 값에 따라 버튼 표시 여부 결정
             const userFrom = localStorage.getItem('userFrom');
             const addRowBtn = document.getElementById('add-row-btn');
-            const saveBtn = document.getElementById('save-btn');
-
+            document.getElementById('save-btn');
+            console.log("userFrom 값:", userFrom); // userFrom 값 디버깅
             if (userFrom !== 'admin') {
                 // admin이 아니면 버튼 숨기기
                 addRowBtn.style.display = 'none';
-                saveBtn.style.display = 'none';
+                document.getElementById('delete-header').style.display='none';
             }
 
             // "보고서 업로드" 버튼 클릭 시 파일 선택 창 열기
@@ -546,14 +548,14 @@
             e.preventDefault();
         });
 
-        document.addEventListener('keydown', function (e) {
-            if (
-                e.key === 'F12' ||
-                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
-            ) {
-                e.preventDefault();
-            }
-        });
+        //document.addEventListener('keydown', function (e) {
+        //    if (
+        //        e.key === 'F12' ||
+        //        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
+        //    ) {
+        //        e.preventDefault();
+        //    }
+        //});
     </script>
 </head>
 <body>
@@ -577,7 +579,7 @@
                     <th>게시일</th>
                     <th>파일크기</th>
                     <th>자료</th>
-                    <th>삭제</th>
+                    <th id="delete-header">삭제</th>
                 </tr>
             </thead>
             <tbody id="report-table-body">
