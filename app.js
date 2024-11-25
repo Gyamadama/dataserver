@@ -22,7 +22,16 @@ const BASE_PORT = process.env.BASE_PORT;
 const BASE_URL = process.env.BASE_URL;
 // Winston 로깅 추가
 const winston = require('winston');
-
+// 세션 설정
+app.use(session({
+    secret: secretKey, // 세션을 위한 고유한 키 설정
+    resave: false, // 요청 중 아무런 수정이 없어도 세션을 저장하지 않도록 설정
+    saveUninitialized: false, // 초기화되지 않은 세션을 저장하지 않음
+    rolling: true, // 요청 시마다 세션 만료 시간 갱신
+    cookie: {
+        maxAge: 60 * 60 * 1000 // 세션 만료 시간 설정 (10분)
+    }
+}));
 // 로거
 const logger = winston.createLogger({
     level: 'info',
@@ -65,16 +74,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// 세션 설정
-app.use(session({
-    secret: secretKey, // 세션을 위한 고유한 키 설정
-    resave: false, // 요청 중 아무런 수정이 없어도 세션을 저장하지 않도록 설정
-    saveUninitialized: false, // 초기화되지 않은 세션을 저장하지 않음
-    rolling: true, // 요청 시마다 세션 만료 시간 갱신
-    cookie: {
-        maxAge: 60*60*1000 // 세션 만료 시간 설정 (10분)
-    }
-}));
+
 
 // 세션 만료 체크 미들웨어
 function sessionCheck(req, res, next) {
@@ -702,8 +702,8 @@ app.post('/updateSchools', async (req, res) => {
 
             // 기존 데이터와 클라이언트 데이터를 병합
             const mergedData = {
-                school_info: school_info || existingSchool.school_info,
-                school_particulas: school_particulas || existingSchool.school_particulas,
+                school_info: school_info !== undefined ? school_info : existingSchool.school_info,
+                school_particulas: school_particulas !== undefined ? school_particulas : existingSchool.school_particulas,
             };
 
             // SQL 실행
