@@ -410,6 +410,7 @@
                     if (existingRow) {
                         // 기존 데이터를 업데이트
                         existingRow[column] = updatedValue;
+
                     } else {
                         // 새로운 데이터를 추가
                         const newRow = {
@@ -584,14 +585,14 @@
             e.preventDefault();
         });
 
-        document.addEventListener('keydown', function (e) {
-            if (
-                e.key === 'F12' ||
-                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
-            ) {
-                e.preventDefault();
-            }
-        });
+        //document.addEventListener('keydown', function (e) {
+        //    if (
+        //        e.key === 'F12' ||
+        //        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))
+        //    ) {
+        //        e.preventDefault();
+        //    }
+        //});
     </script>
 </head>
 <body>
