@@ -365,13 +365,39 @@
         }
 
         async function fetchWithSessionCheck(url, options = {}) {
-            const response = await fetch(url, { ...options, credentials: 'include' });
-            if (response.status === 401) {
-                alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
-                window.location.href = 'login.html';
-                throw new Error('세션 만료'); // 명확하게 에러를 던져 처리
+            try {
+                const response = await fetch(url, { ...options, credentials: 'include' });
+                const contentType = response.headers.get('Content-Type');
+
+                if (!response.ok) {
+                    switch (response.status) {
+                        case 401:
+                            alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
+                            window.location.href = 'login.html';
+                            throw new Error('세션 만료'); // 명확하게 에러를 던져 
+                            break;
+                        case 500:
+                            alert('서버 오류: 관리자에게 문의하세요');
+                            // 사용자에게 오류 메시지 표시 등의 처리
+                            break;
+                        default:
+                            alert(`오류 발생: ${response.status}`);
+                            // 기타 오류 처리
+                            break;
+                    }
+                }
+                // JSON 또는 Blob 응답을 처리
+                if (contentType && contentType.includes('application/json')) {
+                    return await response.json(); // JSON 데이터 반환
+                } else {
+                    return await response; // 바이너리 데이터 반환용
+                }
+
+            } catch (err) {
+                console.error('네트워크 오류:', err);
+                // 네트워크 오류 처리
+                return null;
             }
-            return await response; // JSON 데이터 반환
         }
 
         // 보고서 데이터 로드 함수
@@ -382,14 +408,7 @@
             }
 
             fetchWithSessionCheck(`${SERVER_IP}/reportdata?school_id=${userFrom}&currentschool=${currentschool}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('보고서 데이터를 로드하는 중 서버 오류 발생');
-                    }
-                    return response.json(); // JSON 데이터로 변환
-                })
                 .then(data => {
-
                     if (data.success) {
                         sortedData = data.data.sort((a, b) => a.report_no - b.report_no);
                         displayPage(currentPage);
@@ -410,8 +429,7 @@
             fetchWithSessionCheck(`${SERVER_IP}/reportdown?school_id=${userFrom}&no=${no}&currentschool=${currentschool}`)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('보고서 데이터를 가져오는 중 오류 발생');
-
+                        throw new Error('서버 오류 발생: ' + response.statusText);
                     }
 
                     const disposition = response.headers.get('Content-Disposition');
@@ -452,19 +470,14 @@
             fetchWithSessionCheck(`${SERVER_IP}/deleteReport?report_no=${reportNo}&school_id=${currentschool}`, {
                 method: 'DELETE',
             })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`서버 오류: ${response.status} ${response.statusText}`);
-                    }
-                    return response.json(); // JSON 데이터로 변환
-                })
                 .then(data => {
                     if (data.success) {
                         alert('보고서가 성공적으로 삭제되었습니다.');
-                        loadReportData(); // 삭제 후 테이블 다시 로드
                     } else {
                         alert('삭제 실패: ' + data.message);
                     }
+                    loadReportData(); // 삭제 후 테이블 다시 로드
+
                 })
                 .catch(error => {
                     console.error('삭제 중 오류 발생:', error.message);
@@ -520,16 +533,6 @@
                     method: 'POST',
                     body: formData,
                 })
-                    .then(response => {
-                        // 응답 객체를 직접 판단
-                        if (response.ok) {
-                            return response.json(); // JSON 형식으로 변환
-                        } else if (response.status === 500) {
-                            throw new Error(`파일크기가 너무 큽니다. 파일크기는 16MB를 넘길수 없습니다.`);
-                        } else {
-                            throw new Error(`서버 오류: ${response.status} ${response.statusText}`);
-                        }
-                    })
                     .then(data => {
                         if (data.success) {
                             alert('파일이 성공적으로 업로드되었습니다.');

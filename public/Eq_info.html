@@ -352,13 +352,32 @@
         }
 
         async function fetchWithSessionCheck(url, options = {}) {
-            const response = await fetch(url, { ...options, credentials: 'include' });
-            if (response.status === 401) {
-                alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
-                window.location.href = 'login.html';
-                throw new Error('세션 만료'); // 명확하게 에러를 던져 처리
+            try {
+                const response = await fetch(url, { ...options, credentials: 'include' });
+                if (!response.ok) {
+                    switch (response.status) {
+                        case 401:
+                            alert('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
+                            window.location.href = 'login.html';
+                            throw new Error('세션 만료'); // 명확하게 에러를 던져 
+                            break;
+                        case 500:
+                            alert('서버 오류: 관리자에게 문의하세요');
+                            // 사용자에게 오류 메시지 표시 등의 처리
+                            break;
+                        default:
+                            alert(`오류 발생: ${response.status}`);
+                            // 기타 오류 처리
+                            break;
+                    }
+                }
+
+                return await response.json(); // JSON 데이터 반환
+            } catch (err) {
+                console.error('네트워크 오류:', err);
+                // 네트워크 오류 처리
+                return null;
             }
-            return await response.json(); // JSON 데이터 반환
         }
 
         document.addEventListener('DOMContentLoaded', () => {

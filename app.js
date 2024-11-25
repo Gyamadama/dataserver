@@ -79,13 +79,11 @@ const transporter = nodemailer.createTransport({
 // 세션 만료 체크 미들웨어
 function sessionCheck(req, res, next) {
     if (!req.session.userId) {
-        if (req.accepts('html')) {
-            // HTML 요청이면 로그인 페이지로 리다이렉트
-            return res.redirect('/login.html?message=세션이 만료되었습니다. 다시 로그인해주세요.');
-        } else {
-            // JSON 요청이면 401 상태 반환
-            return res.status(401).json({ success: false, message: '세션이 만료되었습니다. 다시 로그인해주세요.' });
-        }
+        // 항상 JSON 반환
+        return res.status(401).json({
+            success: false,
+            message: '세션이 만료되었습니다. 다시 로그인해주세요.',
+        });
     }
     next();
 }
