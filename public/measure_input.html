@@ -330,12 +330,17 @@
                 }
                 newRow.appendChild(newCell);
             });
+            // 삭제 버튼 생성 및 추가
             const deleteCell = document.createElement('td');
             deleteCell.setAttribute('data-label', '삭제');
             const deleteButton = document.createElement('button');
             deleteButton.textContent = "X";
             deleteButton.className = "delete-row-btn";
             deleteButton.onclick = () => {
+                // `eq_no`를 기준으로 `allData`에서 해당 항목 제거
+                const eq_no = newRow.querySelector('[data-label="장비번호"]').textContent;
+                allData = allData.filter(item => item.eq_no !== eq_no); // 삭제된 데이터를 `allData`에서 제외
+
                 newRow.remove();
                 updateEquipmentCount(); // 행 삭제 시 장비대수 업데이트
             };
@@ -364,7 +369,7 @@
 
         function saveDataToServer() {
             const rows = document.querySelectorAll('#measure-table-body tr');
-            const dataToSave = Array.from(rows).map(row => {
+            const filteredData = Array.from(rows).map(row => {
                 const cells = row.querySelectorAll('td');
                 return {
                     eq_no: cells[0].textContent,
@@ -384,19 +389,31 @@
                 };
             });
 
+            // 기존 데이터와 병합
+            const updatedData = allData.map(item => {
+                const match = filteredData.find(row => row.eq_no === item.eq_no);
+                return match || item; // 검색된 데이터와 기존 데이터 병합
+            });
+
+            // 새로 추가된 데이터만 병합
+            filteredData.forEach(item => {
+                if (!updatedData.find(row => row.eq_no === item.eq_no)) {
+                    updatedData.push(item);
+                }
+            });
+
             fetchWithSessionCheck(`${SERVER_IP}/saveEquipmentInfo?from=${currentSchool}&userId=${currentUserID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dataToSave)
+                body: JSON.stringify(updatedData)
             })
                 .then(response => response.json())
                 .then(data => {
-
                     alert('데이터가 성공적으로 저장되었습니다!');
-                    clearTable();
-                    loadEquipmentInfo();
+                    loadEquipmentInfo(); // 저장 후 다시 전체 데이터 불러오기
                 })
                 .catch(error => console.error('데이터 저장 중 오류 발생:', error));
+
         }
         const currentSchool = localStorage.getItem('currentschool');
         const userFrom = localStorage.getItem('userFrom');
@@ -447,6 +464,7 @@
                 tableBody.removeChild(tableBody.firstChild);
             }
         }
+        let allData = []; // 기존 데이터 저장 배열
 
         function loadEquipmentInfo() {
             if (!userFrom) {
@@ -461,6 +479,9 @@
             fetchWithSessionCheck(`${SERVER_IP}/equipmentinfo?from=${currentSchool}`)
                 .then(response => response.json())
                 .then(data => {
+                    allData = data; // 전체 데이터를 유지
+                    clearTable();
+
                     data.forEach(item => {
                         // 데이터 항목을 각 컬럼 이름에 맞게 매핑
                         addNewRow({
