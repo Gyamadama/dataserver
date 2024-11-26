@@ -196,6 +196,46 @@ app.get('/schoolinfo', async (req, res) => {
     }
 });
 
+
+// 유저정보 조회 API
+app.get('/userinfo', async (req, res) => {
+    try {
+        const query = `SELECT * FROM sys.account`;
+        const [results] = await pool.query(query);
+        res.status(200).json({ success: true, data: results });
+    } catch (error) {
+        handleError(res, error);
+    }
+});
+
+/* 사용자 정보 업데이트 API */
+app.post('/userinfoupdate', async (req, res) => {
+    const updates = req.body; // 수정된 데이터 배열
+
+    try {
+        // 업데이트 쿼리 생성
+        const queries = updates.map(update => {
+            const query = `
+                UPDATE sys.account
+                SET \`FROM\` = ?
+                WHERE NO = ?;
+            `;
+            const params = [update.user_from, update.user_id];
+            return { query, params };
+        });
+
+        // 모든 업데이트 쿼리를 실행
+        const results = await Promise.all(
+            queries.map(q => pool.query(q.query, q.params))
+        );
+
+        // 결과 반환
+        res.status(200).json({ message: '변경 사항이 저장되었습니다.', results });
+    } catch (error) {
+        handleError(res, error); // 공통 에러 처리 함수 사용
+    }
+});
+
 /* 장비정보값조회 APU */
 app.get('/eqselectinfo', async (req, res) => {
     const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
@@ -226,6 +266,30 @@ app.get('/eqselectinfo', async (req, res) => {
             searchTerm, searchTerm, searchTerm, searchTerm, searchTerm,
             searchTerm, searchTerm, searchTerm, searchTerm, searchTerm
         ]);
+        res.status(200).json(results);
+    } catch (error) {
+        handleError(res, error); // 공통 에러 처리 함수 사용
+    }
+});
+
+
+// 유저정보선택조회 API
+app.get('/userselectinfo', async (req, res) => {
+    const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
+    try {
+        const query = `
+            SELECT * FROM sys.account
+            WHERE NO LIKE ? 
+               OR ID LIKE ? 
+               OR NAME LIKE ?
+               OR PHONE LIKE ?
+               OR SCHOOL LIKE ?
+               OR POSITION LIKE ?
+               OR TEL LIKE ?
+               OR EMAIL LIKE ?
+               OR \`FROM\` LIKE ?
+        `;
+        const [results] = await pool.query(query, Array(9).fill(searchTerm));
         res.status(200).json(results);
     } catch (error) {
         handleError(res, error); // 공통 에러 처리 함수 사용

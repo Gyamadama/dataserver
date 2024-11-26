@@ -278,6 +278,12 @@
 
                         // 사이드바에 메뉴 추가
                         sidebar.appendChild(newMenuItem);
+
+                        const newMenuItem2 = document.createElement('a');
+                        newMenuItem2.href = 'account.html';
+                        newMenuItem2.className = 'menu-item';
+                        newMenuItem2.textContent = '유저관리';
+                        sidebar.appendChild(newMenuItem2);
                     }
                 })
                 .catch(error => console.error('사이드바 로드 중 오류:', error));
